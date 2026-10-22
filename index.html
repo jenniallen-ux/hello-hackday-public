@@ -7,8 +7,11 @@
   :root {
     --bg: #ece4f7;
     --fg: #3b2a57;
-    --coat: #fffdfb;
-    --line: #b9a3dc;
+    --coat: #221e29;
+    --belly: #312b3a;
+    --snout: #3b3142;
+    --feature: #f4eefc;
+    --line: #8d76b3;
     --gold: #e9b949;
     --gold-deep: #c8912a;
     --red: #d9445a;
@@ -44,7 +47,7 @@
   @media (prefers-reduced-motion: reduce) { .head, .wave, .shadow, .eye { animation: none; } }
 </style>
 <main>
-  <svg viewBox="0 0 240 290" role="img" aria-label="A smiling white unicorn ornament nodding its head and waving one hoof, holding a gold coin">
+  <svg viewBox="0 0 240 290" role="img" aria-label="A smiling black unicorn ornament nodding its head and waving one hoof, holding a gold coin">
     <!-- shadow and cushion -->
     <ellipse class="shadow" cx="120" cy="276" rx="92" ry="9" fill="var(--line)" opacity="0.45"/>
     <rect x="34" y="236" width="172" height="34" rx="14" fill="var(--red)"/>
@@ -54,7 +57,7 @@
 
     <!-- body -->
     <ellipse cx="120" cy="190" rx="72" ry="58" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
-    <ellipse cx="120" cy="200" rx="40" ry="34" fill="#f8f1ff"/>
+    <ellipse cx="120" cy="200" rx="40" ry="34" fill="var(--belly)"/>
     <!-- back hooves -->
     <ellipse cx="78" cy="240" rx="20" ry="11" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
     <ellipse cx="162" cy="240" rx="20" ry="11" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
@@ -95,20 +98,22 @@
       <circle cx="142" cy="58" r="11" fill="var(--mane-1)"/>
       <!-- eyes (blink) -->
       <g class="eye">
-        <ellipse cx="97" cy="93" rx="7" ry="9" fill="var(--fg)"/>
-        <circle cx="99.5" cy="89.5" r="2.5" fill="var(--coat)"/>
+        <ellipse cx="97" cy="93" rx="8" ry="10" fill="var(--feature)"/>
+        <ellipse cx="98" cy="94" rx="5" ry="7" fill="var(--fg)"/>
+        <circle cx="100" cy="90.5" r="2" fill="var(--feature)"/>
       </g>
       <g class="eye">
-        <ellipse cx="143" cy="93" rx="7" ry="9" fill="var(--fg)"/>
-        <circle cx="145.5" cy="89.5" r="2.5" fill="var(--coat)"/>
+        <ellipse cx="143" cy="93" rx="8" ry="10" fill="var(--feature)"/>
+        <ellipse cx="144" cy="94" rx="5" ry="7" fill="var(--fg)"/>
+        <circle cx="146" cy="90.5" r="2" fill="var(--feature)"/>
       </g>
       <ellipse cx="84" cy="112" rx="10" ry="6" fill="var(--blush)" opacity="0.8"/>
       <ellipse cx="156" cy="112" rx="10" ry="6" fill="var(--blush)" opacity="0.8"/>
       <!-- snout -->
-      <ellipse cx="120" cy="124" rx="26" ry="16" fill="#fbe3ee"/>
-      <ellipse cx="111" cy="121" rx="3" ry="2.5" fill="#c77a9b"/>
-      <ellipse cx="129" cy="121" rx="3" ry="2.5" fill="#c77a9b"/>
-      <path d="M112 131 Q120 137 128 131" fill="none" stroke="var(--fg)" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse cx="120" cy="124" rx="26" ry="16" fill="var(--snout)"/>
+      <ellipse cx="111" cy="121" rx="3" ry="2.5" fill="var(--blush)"/>
+      <ellipse cx="129" cy="121" rx="3" ry="2.5" fill="var(--blush)"/>
+      <path d="M112 131 Q120 137 128 131" fill="none" stroke="var(--feature)" stroke-width="2.5" stroke-linecap="round"/>
     </g>
 
     <!-- raised hoof (waves) -->
