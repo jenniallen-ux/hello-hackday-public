@@ -1,0 +1,115 @@
+<title>Hello World</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+  /* Layout: a lucky-ornament unicorn sitting on its cushion above a centered greeting.
+     Single pale-purple look by choice, so it is the same in light and dark. */
+  :root {
+    --bg: #ece4f7;
+    --fg: #3b2a57;
+    --coat: #fffdfb;
+    --line: #b9a3dc;
+    --gold: #e9b949;
+    --gold-deep: #c8912a;
+    --red: #d9445a;
+    --blush: #f6a9c4;
+    --mane-1: #f7a1c4;
+    --mane-2: #b79cf2;
+    --mane-3: #8fd3f0;
+    --mane-4: #a6e3b8;
+    --display: "Fraunces", Georgia, serif;
+    color-scheme: light;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg);
+    display: grid; place-items: center;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px;
+  }
+  main { display: grid; justify-items: center; gap: 12px; }
+  svg { width: min(280px, 70vw); height: auto; overflow: visible; }
+  h1 { font-family: var(--display); font-weight: 600; font-size: clamp(2.5rem, 10vw, 5rem); margin: 0; text-wrap: balance; }
+
+  .head, .wave { transform-box: view-box; }
+  .head { transform-origin: 120px 146px; animation: nod 1.6s ease-in-out infinite; }
+  .wave { transform-origin: 78px 172px; animation: wave 1.6s ease-in-out infinite; }
+  .shadow { transform-box: fill-box; transform-origin: center; animation: breathe 1.6s ease-in-out infinite; }
+  @keyframes nod { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg) translateY(2px); } }
+  @keyframes wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-28deg); } }
+  @keyframes breathe { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.94); } }
+  @media (prefers-reduced-motion: reduce) { .head, .wave, .shadow { animation: none; } }
+</style>
+<main>
+  <svg viewBox="0 0 240 290" role="img" aria-label="A smiling white unicorn ornament nodding its head and waving one hoof, holding a gold coin">
+    <!-- shadow and cushion -->
+    <ellipse class="shadow" cx="120" cy="276" rx="92" ry="9" fill="var(--line)" opacity="0.45"/>
+    <rect x="34" y="236" width="172" height="34" rx="14" fill="var(--red)"/>
+    <rect x="34" y="236" width="172" height="10" rx="5" fill="#e8687b"/>
+    <circle cx="40" cy="266" r="6" fill="var(--gold)"/>
+    <circle cx="200" cy="266" r="6" fill="var(--gold)"/>
+
+    <!-- body -->
+    <ellipse cx="120" cy="190" rx="72" ry="58" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
+    <ellipse cx="120" cy="200" rx="40" ry="34" fill="#f8f1ff"/>
+    <!-- back hooves -->
+    <ellipse cx="78" cy="240" rx="20" ry="11" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
+    <ellipse cx="162" cy="240" rx="20" ry="11" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
+    <path d="M62 242 h32" stroke="var(--mane-2)" stroke-width="4" stroke-linecap="round"/>
+    <path d="M146 242 h32" stroke="var(--mane-2)" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- coin held by the resting hoof -->
+    <circle cx="156" cy="196" r="24" fill="var(--gold)" stroke="var(--gold-deep)" stroke-width="3"/>
+    <circle cx="156" cy="196" r="17" fill="none" stroke="var(--gold-deep)" stroke-width="1.5"/>
+    <text x="156" y="203" text-anchor="middle" font-size="20" font-weight="700" fill="var(--red)" font-family="serif">福</text>
+    <ellipse cx="146" cy="218" rx="14" ry="11" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
+
+    <!-- collar and bell -->
+    <path d="M66 150 Q120 176 174 150" fill="none" stroke="var(--red)" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="120" cy="168" r="10" fill="var(--gold)" stroke="var(--gold-deep)" stroke-width="2"/>
+    <path d="M113 168 h14" stroke="var(--gold-deep)" stroke-width="2"/>
+    <circle cx="120" cy="172" r="2" fill="var(--gold-deep)"/>
+
+    <!-- head (nods) -->
+    <g class="head">
+      <!-- mane down the back of the head -->
+      <circle cx="170" cy="72" r="16" fill="var(--mane-1)"/>
+      <circle cx="180" cy="96" r="15" fill="var(--mane-2)"/>
+      <circle cx="178" cy="120" r="14" fill="var(--mane-3)"/>
+      <circle cx="168" cy="140" r="12" fill="var(--mane-4)"/>
+      <!-- ears -->
+      <path d="M78 66 L72 30 L102 54 Z" fill="var(--coat)" stroke="var(--line)" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M80 58 L77 40 L94 53 Z" fill="var(--blush)"/>
+      <path d="M162 66 L168 30 L138 54 Z" fill="var(--coat)" stroke="var(--line)" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M160 58 L163 40 L146 53 Z" fill="var(--blush)"/>
+      <!-- face -->
+      <ellipse cx="120" cy="100" rx="58" ry="50" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
+      <!-- horn -->
+      <path d="M110 54 L120 8 L130 54 Z" fill="var(--gold)" stroke="var(--gold-deep)" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M113 44 L127 40 M115 32 L125 29 M117 21 L123 19" stroke="var(--gold-deep)" stroke-width="2" stroke-linecap="round"/>
+      <!-- forelock -->
+      <circle cx="98" cy="58" r="11" fill="var(--mane-2)"/>
+      <circle cx="142" cy="58" r="11" fill="var(--mane-1)"/>
+      <!-- happy closed eyes -->
+      <path d="M88 96 Q97 86 106 96" fill="none" stroke="var(--fg)" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M134 96 Q143 86 152 96" fill="none" stroke="var(--fg)" stroke-width="3.5" stroke-linecap="round"/>
+      <ellipse cx="84" cy="112" rx="10" ry="6" fill="var(--blush)" opacity="0.8"/>
+      <ellipse cx="156" cy="112" rx="10" ry="6" fill="var(--blush)" opacity="0.8"/>
+      <!-- snout -->
+      <ellipse cx="120" cy="124" rx="26" ry="16" fill="#fbe3ee"/>
+      <ellipse cx="111" cy="121" rx="3" ry="2.5" fill="#c77a9b"/>
+      <ellipse cx="129" cy="121" rx="3" ry="2.5" fill="#c77a9b"/>
+      <path d="M112 131 Q120 137 128 131" fill="none" stroke="var(--fg)" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- raised hoof (waves) -->
+    <g class="wave">
+      <path d="M78 176 Q62 140 56 108" fill="none" stroke="var(--line)" stroke-width="27" stroke-linecap="round"/>
+      <path d="M78 176 Q62 140 56 108" fill="none" stroke="var(--coat)" stroke-width="21" stroke-linecap="round"/>
+      <ellipse cx="55" cy="100" rx="15" ry="13" fill="var(--coat)" stroke="var(--line)" stroke-width="3"/>
+      <path d="M42 94 Q55 86 68 94" fill="none" stroke="var(--mane-2)" stroke-width="4" stroke-linecap="round"/>
+    </g>
+  </svg>
+  <h1>Hello, world</h1>
+</main>
