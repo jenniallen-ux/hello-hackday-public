@@ -38,8 +38,10 @@
   .shadow { transform-box: fill-box; transform-origin: center; animation: breathe 1.6s ease-in-out infinite; }
   @keyframes nod { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg) translateY(2px); } }
   @keyframes wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-28deg); } }
+  .eye { transform-box: fill-box; transform-origin: center; animation: blink 4s ease-in-out infinite; }
   @keyframes breathe { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.94); } }
-  @media (prefers-reduced-motion: reduce) { .head, .wave, .shadow { animation: none; } }
+  @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 93% { transform: scaleY(0.1); } 96% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { .head, .wave, .shadow, .eye { animation: none; } }
 </style>
 <main>
   <svg viewBox="0 0 240 290" role="img" aria-label="A smiling white unicorn ornament nodding its head and waving one hoof, holding a gold coin">
@@ -91,9 +93,15 @@
       <!-- forelock -->
       <circle cx="98" cy="58" r="11" fill="var(--mane-2)"/>
       <circle cx="142" cy="58" r="11" fill="var(--mane-1)"/>
-      <!-- happy closed eyes -->
-      <path d="M88 96 Q97 86 106 96" fill="none" stroke="var(--fg)" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M134 96 Q143 86 152 96" fill="none" stroke="var(--fg)" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- eyes (blink) -->
+      <g class="eye">
+        <ellipse cx="97" cy="93" rx="7" ry="9" fill="var(--fg)"/>
+        <circle cx="99.5" cy="89.5" r="2.5" fill="var(--coat)"/>
+      </g>
+      <g class="eye">
+        <ellipse cx="143" cy="93" rx="7" ry="9" fill="var(--fg)"/>
+        <circle cx="145.5" cy="89.5" r="2.5" fill="var(--coat)"/>
+      </g>
       <ellipse cx="84" cy="112" rx="10" ry="6" fill="var(--blush)" opacity="0.8"/>
       <ellipse cx="156" cy="112" rx="10" ry="6" fill="var(--blush)" opacity="0.8"/>
       <!-- snout -->
