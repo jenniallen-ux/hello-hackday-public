@@ -1,0 +1,634 @@
+<title>Show or Tell</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: questions on the left, a sticky "reading" panel on the right that plots the idea
+     on a two-axis map (Benefits from language × Needs a surface). Stacks on phones with a
+     bottom bar that keeps the current verdict in view. Indigo = show (surface), saffron = tell (language). */
+  :root {
+    --paper: #f3f4f8;
+    --panel: #ffffff;
+    --ink: #161925;
+    --muted: #596074;
+    --rule: #dcdfe8;
+    --chip: #e9ebf2;
+    --show: #3a3fd1;
+    --show-soft: #e3e4fb;
+    --tell: #d39200;
+    --tell-ink: #855a00;
+    --tell-soft: #fbefd3;
+    --mix: #7b4fb0;
+    --warn: #b23a3a;
+    --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #10121a; --panel: #181b26; --ink: #eceef6; --muted: #a0a6ba; --rule: #2b2f3e; --chip: #232736;
+      --show: #9196ff; --show-soft: #262a52; --tell: #f0b43a; --tell-ink: #f0b43a; --tell-soft: #3a2e14;
+      --mix: #c09bf0; --warn: #ff8a80; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10121a; --panel: #181b26; --ink: #eceef6; --muted: #a0a6ba; --rule: #2b2f3e; --chip: #232736;
+    --show: #9196ff; --show-soft: #262a52; --tell: #f0b43a; --tell-ink: #f0b43a; --tell-soft: #3a2e14;
+    --mix: #c09bf0; --warn: #ff8a80; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 96px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  p { margin: 0; }
+  a { color: var(--show); }
+  :focus-visible { outline: 3px solid var(--show); outline-offset: 2px; border-radius: 6px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+  /* Header */
+  header.top { display: grid; gap: 20px; margin-bottom: 32px; }
+  .title-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
+  h1 { font-size: clamp(44px, 7vw, 76px); font-weight: 800; line-height: 0.95; }
+  h1 .show { color: var(--show); }
+  h1 .tell { color: var(--tell); }
+  h1 .or { font-weight: 500; color: var(--muted); font-size: 0.6em; }
+  .lede { max-width: 64ch; font-size: 18px; color: var(--muted); }
+  .lede strong { color: var(--ink); }
+  .setup { display: grid; gap: 14px; }
+  .idea-field { display: grid; gap: 6px; max-width: 560px; }
+  .idea-field label { font-weight: 700; font-size: 14px; }
+  .idea-field input { font: inherit; font-size: 18px; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--rule); background: var(--panel); color: var(--ink); width: 100%; }
+  .idea-field input:focus { border-color: var(--show); outline: none; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .presets .eyebrow { margin-right: 4px; }
+  .preset { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
+  .preset:hover { border-color: var(--show); }
+  .preset[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  /* Main grid */
+  .grid { display: grid; gap: 32px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 980px) { .grid { grid-template-columns: minmax(0, 1fr) 420px; align-items: start; } }
+
+  /* Questions */
+  .groups { display: grid; gap: 36px; min-width: 0; }
+  .group { display: grid; gap: 14px; }
+  .group-head { display: grid; gap: 4px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); }
+  .group-head h2 { font-size: 26px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .group-head p { color: var(--muted); max-width: 62ch; }
+  .swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .swatch.s { background: var(--show); }
+  .swatch.l { background: var(--tell); border-radius: 50%; }
+  .swatch.c { background: transparent; border: 2px solid var(--muted); border-radius: 50%; }
+  fieldset.q { border: 0; margin: 0; padding: 16px 0 18px; border-bottom: 1px solid var(--rule); display: grid; gap: 10px; min-width: 0; }
+  fieldset.q legend { padding: 0; font-weight: 700; font-size: 17px; line-height: 1.35; float: left; width: 100%; }
+  fieldset.q legend + * { clear: both; }
+  .opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  @media (max-width: 640px) { .opts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .opt { position: relative; }
+  .opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .opt span { display: flex; align-items: center; min-height: 100%; padding: 8px 10px; font-size: 14px; line-height: 1.3; border-radius: 8px; background: var(--chip); border: 1.5px solid transparent; cursor: pointer; transition: background .15s, border-color .15s; }
+  .opt input:hover + span { border-color: var(--muted); }
+  .opt input:focus-visible + span { outline: 3px solid var(--show); outline-offset: 2px; }
+  .q[data-axis="s"] .opt input:checked + span { background: var(--show-soft); border-color: var(--show); font-weight: 700; }
+  .q[data-axis="l"] .opt input:checked + span { background: var(--tell-soft); border-color: var(--tell); font-weight: 700; }
+  .q[data-axis="c"] .opt input:checked + span { background: var(--panel); border-color: var(--ink); font-weight: 700; }
+  details.why { font-size: 14px; color: var(--muted); }
+  details.why summary { cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; width: fit-content; }
+  details.why summary:hover { color: var(--ink); }
+  details.why p { margin-top: 8px; max-width: 68ch; }
+  details.why .principle { color: var(--ink); font-weight: 700; }
+
+  /* Result panel */
+  aside.reading { background: var(--panel); border: 1px solid var(--rule); border-radius: 16px; padding: 22px; display: grid; gap: 20px; min-width: 0; scroll-margin-top: 16px; }
+  @media (min-width: 980px) { aside.reading { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); overflow-y: auto; } }
+  .verdict { display: grid; gap: 6px; }
+  .verdict h2 { font-size: 32px; font-weight: 800; line-height: 1.05; }
+  .verdict p { color: var(--muted); }
+  .near { font-size: 13px; font-family: var(--mono); color: var(--mix); }
+  .map svg { width: 100%; height: auto; display: block; max-width: 100%; }
+  .map text { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+  .map .qlabel { font-family: var(--display); font-size: 12.5px; font-weight: 700; fill: var(--ink); opacity: .35; }
+  .map .qlabel.on { opacity: 1; }
+  .map .dot-g { transition: transform .45s cubic-bezier(.3,.7,.2,1); }
+  @media (prefers-reduced-motion: reduce) { .map .dot-g { transition: none; } }
+  .readout { display: flex; gap: 16px; font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+  .readout b { color: var(--ink); }
+  .block { display: grid; gap: 8px; }
+  .block h3 { font-size: 15px; font-weight: 700; font-family: var(--body); }
+  .channel { padding: 12px 14px; border-radius: 10px; background: var(--chip); display: grid; gap: 4px; }
+  .channel strong { font-family: var(--display); font-size: 18px; }
+  .channel p { font-size: 14px; color: var(--muted); }
+  .pulls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pull { display: grid; gap: 6px; align-content: start; min-width: 0; }
+  .pull .eyebrow { font-size: 11px; }
+  .bar-row { display: grid; gap: 3px; font-size: 13px; line-height: 1.25; }
+  .bar { height: 5px; border-radius: 3px; background: var(--chip); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 3px; }
+  .pull.s .bar i { background: var(--show); }
+  .pull.l .bar i { background: var(--tell); }
+  .none { font-size: 13px; color: var(--muted); font-style: italic; }
+  ul.plain { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+  ul.plain li { padding-left: 16px; position: relative; }
+  ul.plain li::before { content: ""; position: absolute; left: 2px; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  ul.watch { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  ul.watch li { font-size: 14px; display: grid; gap: 2px; padding-left: 12px; border-left: 3px solid var(--warn); }
+  ul.watch li b { font-weight: 700; }
+  ul.watch li cite { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button.primary, button.ghost { font: inherit; font-size: 14px; font-weight: 700; padding: 9px 14px; border-radius: 10px; cursor: pointer; }
+  button.primary { background: var(--ink); color: var(--paper); border: 0; }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--rule); }
+  .toast { font-size: 13px; color: var(--muted); }
+  textarea.fallback { width: 100%; min-height: 140px; font-family: var(--mono); font-size: 12px; background: var(--chip); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 8px; }
+
+  /* Field guide */
+  section.guide { margin-top: 64px; display: grid; gap: 24px; }
+  section.guide > h2 { font-size: 34px; font-weight: 800; }
+  section.guide > p { color: var(--muted); max-width: 66ch; }
+  .cols { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 760px) { .cols { grid-template-columns: 1fr 1fr; } }
+  .col { padding: 20px; border-radius: 14px; display: grid; gap: 12px; align-content: start; }
+  .col.l { background: var(--tell-soft); }
+  .col.s { background: var(--show-soft); }
+  .col h3 { font-size: 22px; font-weight: 700; }
+  .col dl { margin: 0; display: grid; gap: 10px; }
+  .col dt { font-weight: 700; }
+  .col dd { margin: 0; font-size: 14px; color: var(--muted); }
+  .sources { display: grid; gap: 8px; }
+  .sources h3 { font-size: 18px; }
+  .sources ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13px; color: var(--muted); max-width: 90ch; }
+  .caveat { font-size: 14px; color: var(--muted); max-width: 70ch; border-top: 1px solid var(--rule); padding-top: 16px; }
+
+  /* Phone bar */
+  .phonebar { display: none; }
+  @media (max-width: 979px) {
+    .phonebar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+      background: var(--ink); color: var(--paper); font-size: 14px; }
+    .phonebar a { color: var(--paper); font-weight: 700; white-space: nowrap; }
+    .phonebar .pb-v { font-family: var(--display); font-weight: 700; font-size: 16px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="title-row">
+      <h1><span class="show">Show</span> <span class="or">or</span> <span class="tell">Tell</span></h1>
+    </div>
+    <p class="lede">A diagnostic for deciding whether an idea works best as <strong>a structured interface</strong>, <strong>a conversation</strong> (chat or voice), or a blend. Each question is grounded in what memory, attention and learning research says each mode is good at. Answer for the person using it, at the moment they use it.</p>
+    <div class="setup">
+      <div class="idea-field">
+        <label for="idea">Idea you're testing</label>
+        <input id="idea" type="text" placeholder="e.g. Helping people choose a mortgage" autocomplete="off">
+      </div>
+      <div class="presets" id="presets" role="group" aria-label="Load an example">
+        <span class="eyebrow">Examples</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="groups" id="groups"></div>
+
+    <aside class="reading" id="result" aria-live="polite">
+      <div class="verdict">
+        <span class="eyebrow" id="r-for">Reading</span>
+        <h2 id="r-title">…</h2>
+        <p id="r-summary"></p>
+        <span class="near" id="r-near" hidden></span>
+      </div>
+
+      <div class="map">
+        <svg viewBox="0 0 340 330" role="img" aria-labelledby="map-desc">
+          <desc id="map-desc">Two-axis map. Horizontal axis: benefits from language. Vertical axis: needs a surface.</desc>
+          <rect x="40" y="10" width="140" height="140" fill="var(--show-soft)" opacity=".55"/>
+          <rect x="180" y="10" width="140" height="140" fill="var(--mix)" opacity=".14"/>
+          <rect x="40" y="150" width="140" height="140" fill="var(--chip)"/>
+          <rect x="180" y="150" width="140" height="140" fill="var(--tell-soft)" opacity=".8"/>
+          <line x1="180" y1="10" x2="180" y2="290" stroke="var(--rule)" stroke-width="1.5"/>
+          <line x1="40" y1="150" x2="320" y2="150" stroke="var(--rule)" stroke-width="1.5"/>
+          <rect x="40" y="10" width="280" height="280" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+          <text class="qlabel" id="ql-ui" x="48" y="28">Build the surface</text>
+          <text class="qlabel" id="ql-hybrid" x="312" y="28" text-anchor="end">Talk, then show</text>
+          <text class="qlabel" id="ql-minimal" x="48" y="282">Maybe no interface</text>
+          <text class="qlabel" id="ql-convo" x="312" y="282" text-anchor="end">Conversation</text>
+          <text x="40" y="306">0</text>
+          <text x="320" y="306" text-anchor="end">1</text>
+          <text x="180" y="322" text-anchor="middle">Benefits from language →</text>
+          <text x="32" y="293" text-anchor="end">0</text>
+          <text x="32" y="16" text-anchor="end">1</text>
+          <text transform="translate(16 150) rotate(-90)" text-anchor="middle">Needs a surface →</text>
+          <g class="dot-g" id="dot">
+            <circle r="15" fill="var(--ink)" opacity=".1"/>
+            <circle r="7" fill="var(--ink)" stroke="var(--panel)" stroke-width="2.5"/>
+          </g>
+        </svg>
+        <div class="readout"><span>Surface <b id="r-s">0.00</b></span><span>Language <b id="r-l">0.00</b></span></div>
+      </div>
+
+      <div class="block">
+        <h3>How people reach it</h3>
+        <div class="channel"><strong id="r-ch">…</strong><p id="r-chwhy"></p></div>
+      </div>
+
+      <div class="block">
+        <h3>What's pulling the idea</h3>
+        <div class="pulls">
+          <div class="pull s"><span class="eyebrow" style="color:var(--show)">Toward a surface</span><div id="r-ps"></div></div>
+          <div class="pull l"><span class="eyebrow" style="color:var(--tell-ink)">Toward conversation</span><div id="r-pl"></div></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Patterns that fit</h3>
+        <ul class="plain" id="r-patterns"></ul>
+      </div>
+
+      <div class="block">
+        <h3>Watch-outs from the research</h3>
+        <ul class="watch" id="r-watch"></ul>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="copy" type="button">Copy summary</button>
+        <button class="ghost" id="reset" type="button">Clear answers</button>
+        <span class="toast" id="toast" role="status"></span>
+      </div>
+      <textarea class="fallback" id="fallback" readonly hidden aria-label="Summary text to copy"></textarea>
+    </aside>
+  </div>
+
+  <section class="guide" id="guide">
+    <h2>Field guide</h2>
+    <p>The short version of the science behind the questions. Neither mode is better in general. Each one moves different kinds of work off the person's mind and onto the system.</p>
+    <div class="cols">
+      <div class="col l">
+        <h3>Conversation carries well</h3>
+        <dl>
+          <dt>Compound intent</dt><dd>One sentence can hold several constraints that a UI would spread across screens and filters.</dd>
+          <dt>Fuzzy needs</dt><dd>Clarifying questions narrow a problem the way a good advisor does. Forms assume people know which fields matter.</dd>
+          <dt>Rare tasks</dt><dd>No layout to learn. People describe the goal and skip the learning curve.</dd>
+          <dt>Explanation, practice and reflection</dt><dd>Self-explanation, retrieval practice and tutoring dialogue all strengthen learning, and all are conversational by nature.</dd>
+          <dt>Eyes-busy, hands-busy moments</dt><dd>Audio uses a different attention channel from the visual-manual task in front of someone.</dd>
+        </dl>
+      </div>
+      <div class="col s">
+        <h3>A surface carries well</h3>
+        <dl>
+          <dt>More than about four things at once</dt><dd>A screen acts as external memory. Speech vanishes as it's heard.</dd>
+          <dt>Comparison</dt><dd>Eyes jump between table cells in parallel. Conversation delivers attributes one at a time.</dd>
+          <dt>Spatial, visual and structural content</dt><dd>Maps, layouts, images and diagrams show relationships that words have to serialise.</dd>
+          <dt>Precise adjustment</dt><dd>Direct manipulation gives continuous, reversible feedback in a single gesture.</dd>
+          <dt>Monitoring and review</dt><dd>Glanceable state shows change without asking, and visible details are easier to check before an irreversible step.</dd>
+          <dt>Habit</dt><dd>Frequent tasks get faster on a stable layout that people learn by position.</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="sources">
+      <h3>Sources</h3>
+      <ol>
+        <li>Brysbaert, M. (2019). How many words do we read per minute? A review and meta-analysis of reading rate. <i>Journal of Memory and Language</i>, 109.</li>
+        <li>Chi, M. T. H., de Leeuw, N., Chiu, M.-H., & LaVancher, C. (1994). Eliciting self-explanations improves understanding. <i>Cognitive Science</i>, 18(3).</li>
+        <li>Clark, H. H., & Brennan, S. E. (1991). Grounding in communication. In <i>Perspectives on Socially Shared Cognition</i>. APA.</li>
+        <li>Cowan, N. (2001). The magical number 4 in short-term memory. <i>Behavioral and Brain Sciences</i>, 24(1).</li>
+        <li>Endsley, M. R. (1995). Toward a theory of situation awareness in dynamic systems. <i>Human Factors</i>, 37(1).</li>
+        <li>Larkin, J. H., & Simon, H. A. (1987). Why a diagram is (sometimes) worth ten thousand words. <i>Cognitive Science</i>, 11(1).</li>
+        <li>Leahy, W., & Sweller, J. (2011). Cognitive load theory, modality of presentation and the transient information effect. <i>Applied Cognitive Psychology</i>, 25(6).</li>
+        <li>Mandler, G. (1980). Recognizing: The judgment of previous occurrence. <i>Psychological Review</i>, 87(3).</li>
+        <li>Mayer, R. E. (2021). <i>Multimedia Learning</i> (3rd ed.). Cambridge University Press.</li>
+        <li>Newell, A., & Rosenbloom, P. S. (1981). Mechanisms of skill acquisition and the law of practice. In <i>Cognitive Skills and Their Acquisition</i>.</li>
+        <li>Nielsen, J. (2023). The articulation barrier: Prompt-driven AI UX hurts usability. <i>UX Tigers</i>.</li>
+        <li>Norman, D. A. (1986). Cognitive engineering. In <i>User Centered System Design</i>. Erlbaum.</li>
+        <li>Paivio, A. (1986). <i>Mental Representations: A Dual Coding Approach</i>. Oxford University Press.</li>
+        <li>Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning. <i>Psychological Science</i>, 17(3).</li>
+        <li>Scarr, J., Cockburn, A., & Gutwin, C. (2013). Supporting and exploiting spatial memory in user interfaces. <i>Foundations and Trends in HCI</i>, 6(1).</li>
+        <li>Shneiderman, B. (1983). Direct manipulation: A step beyond programming languages. <i>IEEE Computer</i>, 16(8).</li>
+        <li>VanLehn, K. (2011). The relative effectiveness of human tutoring, intelligent tutoring systems, and other tutoring systems. <i>Educational Psychologist</i>, 46(4).</li>
+        <li>Wickens, C. D. (2002). Multiple resources and performance prediction. <i>Theoretical Issues in Ergonomics Science</i>, 3(2).</li>
+      </ol>
+    </div>
+    <p class="caveat">This is a thinking aid. The scores are a simple sum of your answers, not a validated instrument, and the thresholds are judgement calls. Use it to make your reasoning visible to the team, then test with real people.</p>
+  </section>
+</div>
+
+<div class="phonebar" aria-hidden="true">
+  <span class="pb-v" id="pb-v">…</span>
+  <a href="#result">See reading ↑</a>
+</div>
+
+<script>
+(() => {
+  // Each option adds to the Surface (s) and/or Language (l) scores.
+  const GROUPS = [
+    { key: "s", title: "What the person needs to see or do", swatch: "s",
+      intro: "Load on memory, the shape of the content, and how much hands-on control the task needs." },
+    { key: "l", title: "What the person needs to say", swatch: "l",
+      intro: "How well the intent fits into words, and whether dialogue itself adds value." },
+    { key: "c", title: "Where it happens", swatch: "c",
+      intro: "Context decides between chat and voice. It doesn't move the map." }
+  ];
+
+  const Q = [
+    { id: "s1", axis: "s", short: "Many items to hold in mind",
+      text: "How many options, values or steps must the person keep in mind at once?",
+      opts: [["One or two", {s:0}], ["Three or four", {s:1}], ["Five to seven", {s:2}], ["More than seven", {s:3}]],
+      principle: "Working memory and transience.",
+      why: "Working memory holds about four chunks at a time (Cowan, 2001). Speech disappears as it's heard, so spoken lists longer than three or four items get lost: the transient information effect (Leahy & Sweller, 2011). Chat text stays on screen, which helps, but a scrolling thread is still a poor workspace." },
+    { id: "s2", axis: "s", short: "Side-by-side comparison",
+      text: "Will they compare options across several attributes?",
+      opts: [["No comparing", {s:0}], ["Two options, few details", {s:1}], ["A handful of options", {s:2}], ["Many options, many details", {s:3}]],
+      principle: "Diagrams reduce search.",
+      why: "Comparing is a search task. In a table the eye jumps between cells; a conversation delivers attributes one after another, so people must remember the first option while hearing about the third. Larkin & Simon (1987) showed diagrams help by keeping related information together, which cuts the effort of finding it." },
+    { id: "s3", axis: "s", short: "Visual or spatial content",
+      text: "Is the content itself visual or spatial?",
+      opts: [["No, words and numbers", {s:0}], ["Partly (a photo or place helps)", {s:1}], ["Mostly (layouts, maps, charts)", {s:2}], ["Entirely (the visual is the point)", {s:3}]],
+      principle: "Dual coding and the multimedia principle.",
+      why: "Verbal and visual information are processed in partly separate systems (Paivio, 1986). Describing a layout, route or colour in words is slow and loses detail. People learn more deeply from words and pictures together than from words alone (Mayer, 2021)." },
+    { id: "s4", axis: "s", short: "Understanding structure",
+      text: "Do they need to understand how parts relate to each other?",
+      opts: [["No, single facts", {s:0}], ["A short sequence", {s:1}], ["A process with branches", {s:2}], ["A system or hierarchy", {s:3}]],
+      principle: "Mental models and the modality principle.",
+      why: "To understand a system, people build a mental model of its parts and links. A diagram shows the relationships at once; language has to deliver them one by one. For learning about structure, pair the explanation with a visual, and prefer spoken narration over on-screen text alongside it (Mayer's modality principle)." },
+    { id: "s5", axis: "s", short: "Precise, hands-on control",
+      text: "How precisely do they adjust things?",
+      opts: [["They pick, not tune", {s:0}], ["An exact value now and then", {s:1}], ["Frequent fine-tuning", {s:2}], ["Continuous (drag, crop, mix)", {s:3}]],
+      principle: "Direct manipulation.",
+      why: "Direct manipulation gives continuous, reversible feedback: people see the effect while they act (Shneiderman, 1983). Fine-tuning through language (\"a bit more… no, less\") turns one gesture into many slow turns." },
+    { id: "s6", axis: "s", short: "Monitoring change",
+      text: "Do they need to keep track of a situation as it changes?",
+      opts: [["No, a one-off answer", {s:0}], ["Check status now and then", {s:1}], ["Track several things", {s:2}], ["Watch live and react", {s:3}]],
+      principle: "Situation awareness.",
+      why: "Keeping track of a changing situation depends on perceiving its state at a glance (Endsley, 1995). Conversation is pull-only: people have to ask to find out. A persistent display shows change without a request." },
+    { id: "s7", axis: "s", short: "Costly mistakes",
+      text: "What happens if something is wrong when they commit?",
+      opts: [["Easily undone", {s:0}], ["A mild hassle", {s:1}], ["Costly to fix", {s:2}], ["Serious or irreversible", {s:3}]],
+      principle: "Grounding and verification.",
+      why: "Conversation relies on grounding, both sides confirming they understood each other (Clark & Brennan, 1991). When mistakes are costly, people need to inspect the exact details before they commit. A visible summary is easier to check than one read aloud, and speech recognition errors add risk." },
+
+    { id: "l1", axis: "l", short: "Intent fits one sentence",
+      text: "Could they say what they want in a single sentence?",
+      opts: [["No, they'd rather point", {l:0}], ["Partly", {l:1}], ["Yes, with several conditions", {l:2}], ["Yes, and it'd take many screens otherwise", {l:3}]],
+      principle: "The gulf of execution.",
+      why: "Language is compositional. One sentence can carry several constraints (\"a quiet table for four near the station, Friday after seven\") that a UI spreads across screens and filters. Conversation narrows Norman's gulf of execution, the gap between what someone intends and the actions a system offers (Norman, 1986)." },
+    { id: "l2", axis: "l", short: "Unsure what they need",
+      text: "How sure are they about the problem or the options?",
+      opts: [["They know exactly", {l:0}], ["Mostly sure", {l:1}], ["Fuzzy", {l:2}], ["Exploring from scratch", {l:3}]],
+      principle: "Clarifying dialogue.",
+      why: "When people are unsure, they need good questions asked of them. Dialogue lets the system clarify, narrow and suggest, the way a skilled advisor would. Fixed forms assume people already know which fields matter and what to put in them." },
+    { id: "l3", axis: "l", short: "Knows the words",
+      text: "Do they know the words for what they want?",
+      opts: [["No, they'd need to see choices", {l:0, s:2}], ["Some of them", {l:1, s:1}], ["Mostly", {l:2}], ["Yes, fluently", {l:3}]],
+      principle: "Recognition beats recall.",
+      why: "Recognising an option is easier than recalling it (Mandler, 1980). A blank prompt asks people to recall and articulate, and many people struggle to put needs into words, which Nielsen (2023) calls the articulation barrier. Visible options, examples and suggestion chips turn recall back into recognition. Low answers here push toward a surface." },
+    { id: "l4", axis: "l", short: "Explanation, coaching or practice",
+      text: "Is the value in explanation, coaching, practice or reflection?",
+      opts: [["No, they want a result", {l:0}], ["A little explanation helps", {l:1}], ["Guidance matters a lot", {l:2}], ["The dialogue is the point", {l:3}]],
+      principle: "Self-explanation, retrieval and tutoring.",
+      why: "Explaining ideas in your own words (Chi et al., 1994) and retrieving answers from memory (Roediger & Karpicke, 2006) both strengthen learning. One-to-one tutoring dialogue is among the most effective forms of instruction (VanLehn, 2011). Conversation is a natural home for all three." },
+    { id: "l5", axis: "l", short: "Rarely done",
+      text: "How often does the same person do this?",
+      opts: [["Many times a day", {l:0, s:2}], ["About weekly", {l:1, s:1}], ["A few times a year", {l:2}], ["Once, or almost never", {l:3}]],
+      principle: "Practice and spatial memory.",
+      why: "With practice, actions become fast and automatic (Newell & Rosenbloom, 1981), and people remember where things sit on a stable screen (Scarr, Cockburn & Gutwin, 2013). Typing the same request every day is slower than a habitual tap. Rare tasks never get learned, so language saves people a learning curve. Frequent use pushes toward a surface." },
+
+    { id: "c1", axis: "c", short: "Eyes or hands busy",
+      text: "Are their eyes or hands busy with something else?",
+      opts: [["No, at a desk or phone", {}], ["Sometimes, on the move", {}], ["Often (cooking, walking)", {}], ["Always (driving, caregiving, tools)", {}]],
+      principle: "Multiple resource theory.",
+      why: "People share attention better across different channels than within the same one (Wickens, 2002). When eyes and hands are taken, speech input and audio output compete less with the main task than a screen does." },
+    { id: "c2", axis: "c", short: "Comfortable speaking aloud",
+      text: "Can they speak and listen comfortably where this happens?",
+      opts: [["No (public, noisy, sensitive)", {}], ["Sometimes", {}], ["Usually", {}], ["Yes, freely", {}]],
+      principle: "Social context and listening speed.",
+      why: "Speaking aloud is a social act. Noise, other people and sensitive topics make voice awkward or unsafe. Listening is also slower than reading, around 150 spoken words a minute against roughly 240 read silently (Brysbaert, 2019), and audio can't be skimmed." }
+  ];
+
+  const PRESETS = [
+    { name: "Choosing a mortgage", a: { s1:3, s2:3, s3:0, s4:2, s5:1, s6:0, s7:3, l1:2, l2:2, l3:1, l4:2, l5:3, c1:0, c2:1 } },
+    { name: "Booking a restaurant table", a: { s1:1, s2:1, s3:1, s4:0, s5:0, s6:0, s7:1, l1:3, l2:1, l3:3, l4:0, l5:2, c1:1, c2:2 } },
+    { name: "Cooking along with a recipe", a: { s1:1, s2:0, s3:1, s4:1, s5:0, s6:1, s7:0, l1:2, l2:0, l3:3, l4:1, l5:2, c1:3, c2:3 } },
+    { name: "Editing a photo", a: { s1:2, s2:1, s3:3, s4:0, s5:3, s6:1, s7:0, l1:1, l2:1, l3:1, l4:0, l5:1, c1:0, c2:2 } },
+    { name: "Learning heart anatomy", a: { s1:2, s2:1, s3:3, s4:3, s5:1, s6:0, s7:0, l1:1, l2:2, l3:0, l4:3, l5:2, c1:0, c2:2 } },
+    { name: "Reflective journaling coach", a: { s1:0, s2:0, s3:0, s4:1, s5:0, s6:1, s7:0, l1:1, l2:3, l3:2, l4:3, l5:1, c1:0, c2:1 } },
+    { name: "Setting home heating", a: { s1:1, s2:0, s3:1, s4:1, s5:1, s6:1, s7:0, l1:2, l2:0, l3:2, l4:0, l5:0, c1:1, c2:3 } }
+  ];
+
+  const QUADS = {
+    convo: { title: "Conversation can carry it",
+      summary: "People can say what they want, and there's little they need to see or hold in mind. Chat or voice can do the whole job.",
+      patterns: ["A single-thread chat or voice flow with clear turn-taking", "Suggested replies for the first turn and for likely next steps", "A short confirmation that restates what will happen", "A hand-off to a screen only for the rare moment that needs one"] },
+    hybrid: { title: "Talk, then show",
+      summary: "Saying what they want helps, but the answer has shape: things to compare, check or adjust. Let language drive and let a visual surface hold the result.",
+      patterns: ["Chat that replies with cards, tables or previews instead of paragraphs", "A canvas or panel beside the conversation that updates as people talk", "Direct edits on the visual result, with chat for bigger changes", "An ask box or command bar inside an existing interface"] },
+    ui: { title: "Build the surface",
+      summary: "The work depends on seeing, comparing or manipulating things, and people know what they're doing. A structured interface with direct manipulation will be faster and clearer.",
+      patterns: ["Direct manipulation with immediate, visible feedback", "Stable layouts that people learn and find by position", "Overview first, then zoom and filter, then details on demand", "Conversational help as an optional assist, not the main path"] },
+    minimal: { title: "Maybe no interface at all",
+      summary: "There's little to say and little to see. Before designing chat or screens, ask whether a good default, an automation or a single control removes the task.",
+      patterns: ["Smart defaults and automation with an easy override", "One glanceable control or status: a widget, a toggle, a notification", "A nudge at the right moment instead of a place to visit", "A settings page for the few who want to tune it"] }
+  };
+
+  const S_MAX = 21, L_MAX = 15, T = 0.5;
+  const $ = (id) => document.getElementById(id);
+  let answers = {};
+  let presetName = null;
+
+  // Build the questions
+  const groupsEl = $("groups");
+  GROUPS.forEach(g => {
+    const sec = document.createElement("section");
+    sec.className = "group";
+    sec.innerHTML = `<div class="group-head"><h2><span class="swatch ${g.swatch}"></span>${g.title}</h2><p>${g.intro}</p></div>`;
+    Q.filter(q => q.axis === g.key).forEach(q => {
+      const fs = document.createElement("fieldset");
+      fs.className = "q"; fs.dataset.axis = q.axis;
+      fs.innerHTML = `<legend>${q.text}</legend>
+        <div class="opts">${q.opts.map((o, i) => `<label class="opt"><input type="radio" name="${q.id}" id="${q.id}-${i}" value="${i}"><span>${o[0]}</span></label>`).join("")}</div>
+        <details class="why"><summary>Why it matters</summary><p><span class="principle">${q.principle}</span> ${q.why}</p></details>`;
+      sec.appendChild(fs);
+    });
+    groupsEl.appendChild(sec);
+  });
+
+  // Presets
+  const presetsEl = $("presets");
+  PRESETS.forEach(p => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "preset"; b.textContent = p.name;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => loadPreset(p));
+    presetsEl.appendChild(b);
+  });
+
+  function syncPresetButtons() {
+    presetsEl.querySelectorAll(".preset").forEach(b => b.setAttribute("aria-pressed", String(b.textContent === presetName)));
+  }
+
+  function loadPreset(p) {
+    answers = { ...p.a };
+    presetName = p.name;
+    $("idea").value = p.name;
+    applyAnswersToInputs();
+    update();
+  }
+
+  function applyAnswersToInputs() {
+    Q.forEach(q => {
+      const v = answers[q.id];
+      q.opts.forEach((_, i) => { $(`${q.id}-${i}`).checked = v === i; });
+    });
+  }
+
+  groupsEl.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.type !== "radio") return;
+    answers[t.name] = Number(t.value);
+    presetName = null;
+    update();
+  });
+  $("idea").addEventListener("input", () => { presetName = null; update(); });
+
+  function contrib(q) {
+    const v = answers[q.id];
+    return v == null ? {} : q.opts[v][1];
+  }
+
+  function compute() {
+    let s = 0, l = 0;
+    Q.forEach(q => { const c = contrib(q); s += c.s || 0; l += c.l || 0; });
+    const sn = Math.min(1, s / S_MAX), ln = Math.min(1, l / L_MAX);
+    const quad = sn >= T ? (ln >= T ? "hybrid" : "ui") : (ln >= T ? "convo" : "minimal");
+    return { sn, ln, quad };
+  }
+
+  function channelFor(quad) {
+    const c1 = answers.c1 ?? 0, c2 = answers.c2 ?? 2;
+    const busy = c1 >= 2, canSpeak = c2 >= 2;
+    const conv = quad === "convo" || quad === "hybrid";
+    if (busy && canSpeak) return conv
+      ? { kind: "voice", name: "Voice first, screen optional", why: "Eyes or hands are busy and speaking is comfortable. Keep spoken turns short, and send anything with more than three items to a screen people can glance at." }
+      : { kind: "voice", name: "Interface, with voice for busy moments", why: "The core work needs a surface, but people's hands or eyes are often taken. Add voice commands and spoken status for those moments." };
+    if (busy && !canSpeak) return { kind: "glance", name: "Glanceable output, minimal input", why: "Attention is elsewhere and speaking aloud is awkward. Use short glanceable cards, haptics or one-tap input. Avoid long reading, typing or listening." };
+    if (conv && canSpeak) return { kind: "chat", name: "Text chat, voice as an option", why: "Reading is faster than listening and text stays put for rereading. Offer voice for people who prefer it or need it." };
+    if (conv) return { kind: "chat", name: "Text chat", why: "Speaking aloud is awkward here, and text can be reread and skimmed. Default to written conversation." };
+    return { kind: "screen", name: "Screen and touch or pointer", why: "People are at a screen with attention to spare. A visual interface uses that channel fully." };
+  }
+
+  function watchouts(quad, ch) {
+    const a = (id) => answers[id] ?? -1;
+    const conv = quad === "convo" || quad === "hybrid";
+    const out = [];
+    if (ch.kind === "voice" && conv && a("s1") >= 2) out.push(["Spoken lists overload memory.", "Offer at most three options per spoken turn, chunk the rest, or push the list to a screen.", "Cowan 2001; Leahy & Sweller 2011"]);
+    if (conv && a("s2") >= 2) out.push(["Comparison is hard in a thread.", "Reply with a table or cards people can scan, not a paragraph per option.", "Larkin & Simon 1987"]);
+    if (conv && a("s3") >= 2) out.push(["Words lose the picture.", "Show the image, map or layout inline. Describe it in words for accessibility too.", "Paivio 1986; Mayer 2021"]);
+    if (a("s4") >= 2 && a("l4") >= 2) out.push(["Narrate a diagram, don't replace it.", "For learning structure, pair the explanation with a visual, and prefer spoken narration to blocks of on-screen text beside it.", "Mayer 2021, modality principle"]);
+    if (conv && a("s5") >= 2) out.push(["Tuning by talking is slow.", "Give people a slider, handle or direct edit for fine adjustments, and keep chat for big moves.", "Shneiderman 1983"]);
+    if (conv && a("s6") >= 2) out.push(["Conversation can't be glanced at.", "Add a persistent status view or timely notifications so people don't have to ask.", "Endsley 1995"]);
+    if (a("s7") >= 2) out.push(["Make the commit step checkable.", ch.kind === "voice" ? "Read back the key values, ask for an explicit yes, and send a written copy." : "Show a clear, reviewable summary with the exact values before people confirm.", "Clark & Brennan 1991"]);
+    if (conv && a("l3") >= 0 && a("l3") <= 1) out.push(["The blank prompt problem.", "People can't ask for what they can't name. Seed the first turn with examples and suggestion chips.", "Mandler 1980; Nielsen 2023"]);
+    if (conv && a("l5") === 0) out.push(["Daily typing beats nobody.", "Frequent tasks need one-tap shortcuts, saved requests or a stable view people learn by position.", "Newell & Rosenbloom 1981; Scarr et al. 2013"]);
+    if (!conv && a("l2") >= 2) out.push(["Give lost people a way in.", "Offer a conversational or guided entry for people who don't know where to start.", "Norman 1986"]);
+    if (!conv && a("l4") >= 2) out.push(["Results alone don't teach.", "Build in moments to explain, recall or reflect, for example a prompt to predict before revealing.", "Chi et al. 1994; Roediger & Karpicke 2006"]);
+    if (ch.kind === "glance" && conv) out.push(["Mind the attention budget.", "Keep messages to a few words, and let people defer anything longer to when they're free.", "Wickens 2002"]);
+    return out;
+  }
+
+  function drivers() {
+    const rows = Q.map(q => ({ q, c: contrib(q) }));
+    const top = (k, max) => rows.filter(r => (r.c[k] || 0) > 0).sort((x, y) => y.c[k] - x.c[k]).slice(0, 4)
+      .map(r => ({ label: r.q.short, pct: Math.round((r.c[k] / 3) * 100) }));
+    return { s: top("s"), l: top("l") };
+  }
+
+  function renderPull(el, list) {
+    el.innerHTML = list.length ? list.map(d => `<div class="bar-row">${d.label}<div class="bar"><i style="width:${d.pct}%"></i></div></div>`).join("")
+      : `<span class="none">Nothing yet</span>`;
+  }
+
+  let last = null;
+  function update() {
+    const answered = Q.filter(q => answers[q.id] != null).length;
+    const { sn, ln, quad } = compute();
+    const info = QUADS[quad];
+    const ch = channelFor(quad);
+    const w = watchouts(quad, ch);
+    const idea = $("idea").value.trim();
+
+    $("r-for").textContent = idea ? `Reading for: ${idea}` : `Reading · ${answered} of ${Q.length} answered`;
+    $("r-title").textContent = info.title;
+    $("r-summary").textContent = info.summary;
+    const near = Math.abs(sn - T) < 0.08 || Math.abs(ln - T) < 0.08;
+    $("r-near").hidden = !near || answered < 4;
+    $("r-near").textContent = "Close to a boundary: the neighbouring pattern is a fair choice too.";
+    $("r-s").textContent = sn.toFixed(2);
+    $("r-l").textContent = ln.toFixed(2);
+
+    const x = 40 + ln * 280, y = 290 - sn * 280;
+    $("dot").style.transform = `translate(${x}px, ${y}px)`;
+    ["ui", "hybrid", "minimal", "convo"].forEach(k => $(`ql-${k}`).classList.toggle("on", k === quad));
+
+    $("r-ch").textContent = ch.name;
+    $("r-chwhy").textContent = ch.why;
+    const d = drivers();
+    renderPull($("r-ps"), d.s);
+    renderPull($("r-pl"), d.l);
+    $("r-patterns").innerHTML = info.patterns.map(p => `<li>${p}</li>`).join("");
+    $("r-watch").innerHTML = w.length ? w.map(([h, b, c]) => `<li><b>${h}</b><span>${b}</span><cite>${c}</cite></li>`).join("")
+      : `<li style="border-color:var(--rule)"><span>No specific risks from your answers so far.</span></li>`;
+    $("pb-v").textContent = info.title;
+    syncPresetButtons();
+
+    last = { idea, sn, ln, info, ch, w, d };
+    save();
+  }
+
+  function summaryText() {
+    const { idea, sn, ln, info, ch, w, d } = last;
+    const lines = [
+      `Show or Tell: ${idea || "Untitled idea"}`,
+      `Reading: ${info.title} (surface ${sn.toFixed(2)}, language ${ln.toFixed(2)})`,
+      info.summary,
+      `How people reach it: ${ch.name}. ${ch.why}`,
+      `Pulling toward a surface: ${d.s.map(x => x.label).join(", ") || "none"}`,
+      `Pulling toward conversation: ${d.l.map(x => x.label).join(", ") || "none"}`,
+      `Patterns that fit:`, ...info.patterns.map(p => `- ${p}`)
+    ];
+    if (w.length) lines.push(`Watch-outs:`, ...w.map(([h, b, c]) => `- ${h} ${b} (${c})`));
+    return lines.join("\n");
+  }
+
+  $("copy").addEventListener("click", () => {
+    const text = summaryText();
+    const fb = $("fallback");
+    const done = () => { $("toast").textContent = "Copied"; setTimeout(() => $("toast").textContent = "", 2000); };
+    const fail = () => { fb.hidden = false; fb.value = text; fb.focus(); fb.select(); $("toast").textContent = "Select and copy the text below"; };
+    try { navigator.clipboard.writeText(text).then(() => { fb.hidden = true; done(); }, fail); } catch (e) { fail(); }
+  });
+
+  $("reset").addEventListener("click", () => {
+    answers = {}; presetName = null; $("idea").value = "";
+    applyAnswersToInputs(); update();
+  });
+
+  // Per-viewer convenience: remember the last answers in this browser.
+  const KEY = "show-or-tell-v1";
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify({ answers, presetName, idea: $("idea").value })); } catch (e) {}
+  }
+  function restore() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return false;
+      const st = JSON.parse(raw);
+      if (!st || !st.answers || !Object.keys(st.answers).length) return false;
+      answers = st.answers; presetName = st.presetName || null; $("idea").value = st.idea || "";
+      return true;
+    } catch (e) { return false; }
+  }
+
+  if (restore()) { applyAnswersToInputs(); update(); }
+  else loadPreset(PRESETS[0]);
+})();
+</script>
