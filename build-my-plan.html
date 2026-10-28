@@ -162,11 +162,10 @@ const spend = () => [...state.bills].reduce((t, id) => t + BILLS.find(b => b.id 
 const util = () => spend() / state.limit;
 const ceiling = () => Math.round(state.limit * HEALTHY_MAX);
 
-function utilStatus(u) {
-  if (u === 0) return ["none", "Nothing on the card yet. An unused card builds no history."];
-  if (u <= HEALTHY_MAX) return ["good", "In the healthy range. Lenders can see you using credit lightly."];
-  if (u <= 0.75) return ["warn", "Above the healthy range. Try moving less onto the card."];
-  return ["bad", "Close to your limit. This would count against your credit file."];
+function utilStatus(u) {   // three states, matching Alex's First Card
+  if (u < 0.01) return ["none", "Too low. Little or no use shows lenders nothing, so it won't build your file."];
+  if (u <= HEALTHY_MAX) return ["good", "Healthy. Light, regular use shows lenders you can manage credit."];
+  return ["bad", "Too high. Using this much of your limit counts against your file, even if you pay on time."];
 }
 
 /* 6-month projection of statement balance for a repayment approach */
