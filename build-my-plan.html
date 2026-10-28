@@ -74,7 +74,7 @@
   .meter-row strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
   .ubar { position: relative; height: 12px; border-radius: 99px; background: var(--line); overflow: hidden; }
   .ubar .fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 99px; background: var(--good); transition: width .4s ease, background-color .4s ease; }
-  .ubar .zone { position: absolute; top: 0; bottom: 0; left: 1%; width: 29%; background: color-mix(in srgb, var(--good) 22%, transparent); border-right: 2px solid var(--good); }
+  .ubar .zone { position: absolute; top: 0; bottom: 0; left: 15%; width: 45%; border-left: 2px solid var(--good); background: color-mix(in srgb, var(--good) 22%, transparent); border-right: 2px solid var(--good); }
   .meter-note { font-size: .82rem; margin-top: 6px; }
   .meter-note.good { color: var(--good); } .meter-note.warn { color: var(--warn); } .meter-note.bad { color: var(--bad); } .meter-note.none { color: var(--muted); }
 
@@ -138,7 +138,8 @@
 
 <script>
 /* ---------- Illustrative rules ---------- */
-const HEALTHY_MAX = 0.30;      // illustrative healthy utilisation ceiling, to agree with credit risk
+const LOW_MAX = 0.15;          // under 15%: too low
+const HEALTHY_MAX = 0.60;      // 15–60%: healthy. Illustrative, to agree with credit risk
 const MONTHLY_RATE = 0.02;     // roughly 24% APR, illustrative
 const minPayment = b => Math.min(b, Math.max(25, Math.round(b * 0.03)));
 const gbp = n => "£" + Math.round(n).toLocaleString("en-GB");
@@ -161,10 +162,11 @@ const state = {
 const spend = () => [...state.bills].reduce((t, id) => t + BILLS.find(b => b.id === id).amount, 0) + (state.customOn ? (+state.customAmount || 0) : 0);
 const util = () => spend() / state.limit;
 const ceiling = () => Math.round(state.limit * HEALTHY_MAX);
+const floor = () => Math.round(state.limit * LOW_MAX);
 
 function utilStatus(u) {   // three states, matching Alex's First Card
-  if (u < 0.01) return ["none", "Too low. Little or no use shows lenders nothing, so it won't build your file."];
-  if (u <= HEALTHY_MAX) return ["good", "Healthy. Light, regular use shows lenders you can manage credit."];
+  if (u < LOW_MAX) return ["none", "Too low. This little use won't do much for your file."];
+  if (u <= HEALTHY_MAX) return ["good", "Healthy. Regular use, paid off, shows lenders you can manage credit."];
   return ["bad", "Too high. Using this much of your limit counts against your file, even if you pay on time."];
 }
 
@@ -203,7 +205,7 @@ function meterHTML() {
     <div class="meter-row"><span>Each month on your card</span><strong>${gbp(spend())} · ${pct}% of ${gbp(state.limit)}</strong></div>
     <div class="ubar" role="meter" aria-label="Credit utilisation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-valuetext="${pct} percent, healthy range up to 30 percent">
       <span class="fill" style="width:${Math.min(100, u > 0 ? Math.max(2, pct) : 0)}%;background:${col}"></span><span class="zone"></span></div>
-    <div class="meter-note ${cls}">${note} <span class="muted">Healthy range: up to ${gbp(ceiling())}.</span></div>
+    <div class="meter-note ${cls}">${note} <span class="muted">Healthy range: ${gbp(floor())} to ${gbp(ceiling())}.</span></div>
   </div>`;
 }
 
@@ -237,7 +239,7 @@ function intro() {
       <h2>Your credit limit</h2>
       <p class="muted">In the app this comes from your account. For the prototype, pick one:</p>
       <div class="options" role="radiogroup" aria-label="Credit limit">
-        ${[250, 500, 1000].map(l => `<button class="opt" role="radio" aria-checked="${state.limit === l}" data-limit="${l}"><span class="tick">${state.limit === l ? "✓" : ""}</span><span class="opt-body"><span class="opt-title"><span>${gbp(l)} limit</span><span class="muted">healthy up to ${gbp(l * HEALTHY_MAX)}</span></span></span></button>`).join("")}
+        ${[250, 500, 1000].map(l => `<button class="opt" role="radio" aria-checked="${state.limit === l}" data-limit="${l}"><span class="tick">${state.limit === l ? "✓" : ""}</span><span class="opt-body"><span class="opt-title"><span>${gbp(l)} limit</span><span class="muted">healthy ${gbp(l * LOW_MAX)}–${gbp(l * HEALTHY_MAX)}</span></span></span></button>`).join("")}
       </div>
     </div>`;
   screen.querySelectorAll("[data-limit]").forEach(b => b.addEventListener("click", () => { state.limit = +b.dataset.limit; render(); }));
@@ -274,8 +276,9 @@ function refreshSpend() {
 function spendAdvice() {
   const u = util();
   if (u === 0) return `<div class="tip"><b>Why at least one?</b>Lenders can only see how you handle credit if you use it. A small, regular amount is enough.</div>`;
+  if (u < LOW_MAX) return `<div class="tip"><b>A little more would help</b>At ${gbp(spend())} a month you'd use ${Math.round(u * 100)}% of your limit, below the healthy range. Moving a bit more of your existing spending onto the card, about ${gbp(floor())} or more a month, would do more for your file.</div>`;
   if (u <= HEALTHY_MAX) return `<div class="tip"><b>Good choice</b>Small, predictable spending that you pay off in full is the simplest way to build a positive history.</div>`;
-  return `<div class="alert ${u > 0.75 ? "bad" : "warn"}">At ${gbp(spend())} a month you'd use ${Math.round(u * 100)}% of your limit. Using a high share of your limit can count against you, even if you pay on time. Try keeping it under ${gbp(ceiling())}.</div>`;
+  return `<div class="alert bad">At ${gbp(spend())} a month you'd use ${Math.round(u * 100)}% of your limit. Using a high share of your limit can count against you, even if you pay on time. Try keeping it under ${gbp(ceiling())}.</div>`;
 }
 
 const PAY = [
@@ -286,7 +289,7 @@ const PAY = [
 
 function payScreen() {
   const p = state.pay ? project(state.pay) : null;
-  const maxBar = Math.max(state.limit * 0.6, ...(p ? p.months : [0]));
+  const maxBar = Math.max(state.limit * 0.7, ...(p ? p.months : [0]));
   screen.innerHTML = `<section class="fade">
     <h1 tabindex="-1">How will you pay it off?</h1>
     <p class="lead">Pick one to see what happens over your first six months.</p>
@@ -296,11 +299,11 @@ function payScreen() {
     ${p ? `<div class="card" style="margin-top:14px">
       <h2>Your statement balance, month by month</h2>
       <div class="proj" role="img" aria-label="Statement balance over six months: ${p.months.map(gbp).join(", ")}">
-        <span class="band" style="height:${Math.min(100, ceiling() / maxBar * 100)}%"></span>
-        ${p.months.map(v => `<span class="b" style="height:${Math.max(3, v / maxBar * 100)}%;background:${v / state.limit <= HEALTHY_MAX ? "var(--good)" : v / state.limit <= .75 ? "var(--warn)" : "var(--bad)"}"></span>`).join("")}
+        <span class="band" style="bottom:${floor() / maxBar * 100}%;height:${(ceiling() - floor()) / maxBar * 100}%;border-bottom:2px dashed var(--good)"></span>
+        ${p.months.map(v => `<span class="b" style="height:${Math.max(3, v / maxBar * 100)}%;background:${v / state.limit < LOW_MAX ? "var(--muted)" : v / state.limit <= HEALTHY_MAX ? "var(--good)" : "var(--bad)"}"></span>`).join("")}
       </div>
       <div class="proj-labels">${["M1","M2","M3","M4","M5","M6"].map(m => `<span>${m}</span>`).join("")}</div>
-      <p class="muted" style="margin-top:6px">Dashed line: top of the healthy range (${gbp(ceiling())}).</p>
+      <p class="muted" style="margin-top:6px">Shaded band: the healthy range (${gbp(floor())} to ${gbp(ceiling())}).</p>
       <div class="facts">
         <div><span>Interest &amp; fees</span><strong>${gbp(p.interest)}</strong></div>
         <div><span>Owed after 6 months</span><strong>${gbp(p.endBalance)}</strong></div>
@@ -349,11 +352,11 @@ function review() {
     <h1 tabindex="-1">Your plan</h1>
     <p class="lead">Here's what you've chosen. You can change any part of it later.</p>
     <div class="card">
-      <div class="plan-line"><span class="k">On the card</span><span class="v"><strong>${gbp(spend())} a month</strong><br>${items.join(", ")}<br><span class="muted">${Math.round(u * 100)}% of your ${gbp(state.limit)} limit${cls === "good" ? ", in the healthy range" : ", above the healthy range"}</span><br><button data-edit="1">Change</button></span></div>
+      <div class="plan-line"><span class="k">On the card</span><span class="v"><strong>${gbp(spend())} a month</strong><br>${items.join(", ")}<br><span class="muted">${Math.round(u * 100)}% of your ${gbp(state.limit)} limit${cls === "good" ? ", in the healthy range" : cls === "none" ? ", below the healthy range" : ", above the healthy range"}</span><br><button data-edit="1">Change</button></span></div>
       <div class="plan-line"><span class="k">Paying</span><span class="v"><strong>${payName}</strong><br><span class="muted">${p.interest ? `About ${gbp(p.interest)} in interest and fees over six months` : "No interest or fees"}</span><br><button data-edit="2">Change</button></span></div>
       <div class="plan-line"><span class="k">Staying on track</span><span class="v">${alertsOn.length ? alertsOn.join("<br>") : '<span class="muted">No reminders or alerts</span>'}<br><button data-edit="3">Change</button></span></div>
     </div>
-    ${cls !== "good" ? `<div class="alert warn">Your plan puts you above the healthy range. You can still save it, but moving less onto the card would build your history faster.</div>` : ""}
+    ${cls === "bad" ? `<div class="alert warn">Your plan puts you above the healthy range. You can still save it, but moving less onto the card would build your history faster.</div>` : cls === "none" ? `<div class="tip"><b>Worth knowing</b>Your plan is below the healthy range. It still builds history, but moving a little more of your existing spending onto the card would do more.</div>` : ""}
     <div class="card">
       <h2>What happens next</h2>
       <ol class="timeline">
