@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack Day: Alex's First Card</title>
+<meta name="description" content="What we made at a hack day: an interactive story that helps new-to-credit customers build a credit strategy.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=Inter:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #ffffff; --ink: #111111; --muted: #6e6e73; --hair: #e8e8ed; --faint: #d1d1d6; --ok: #1f8a5b; --low: #8e8e93; --high: #c2384d;
+    --display: "Fraunces", Georgia, serif; --body: "Inter", system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #0f0f10; --ink: #f2f2f4; --muted: #9a9aa1; --hair: #2a2a2e; --faint: #3a3a3f; --ok: #4cc38a; --high: #f07087; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 24px 72px; }
+  a { color: inherit; text-underline-offset: 3px; }
+  .eyebrow { font-size: .85rem; color: var(--muted); margin: 0 0 14px; letter-spacing: .02em; }
+  h1 { font: 400 clamp(2.4rem, 7vw, 3.6rem)/1.05 var(--display); letter-spacing: -.02em; margin: 0; }
+  h2 { font: 400 1.7rem/1.2 var(--display); margin: 0 0 14px; }
+  .lead { font-size: 1.2rem; color: var(--muted); margin: 18px 0 0; max-width: 34em; }
+  .cta { display: inline-flex; align-items: center; gap: 10px; margin-top: 32px; padding: 16px 26px; border-radius: 999px; background: var(--ink); color: var(--bg); text-decoration: none; font-weight: 600; }
+  .cta:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .cta-note { display: block; font-size: .85rem; color: var(--muted); margin-top: 10px; }
+  section { margin-top: 72px; }
+  p { margin: 0 0 14px; }
+
+  /* Three-state utilisation strip as a visual anchor */
+  .scale { position: relative; display: grid; grid-template-columns: 15fr 45fr 40fr; gap: 5px; height: 8px; margin: 28px 0 8px; }
+  .scale span { border-radius: 3px; }
+  .scale .a { background: color-mix(in srgb, var(--low) 45%, transparent); }
+  .scale .b { background: color-mix(in srgb, var(--ok) 70%, transparent); }
+  .scale .c { background: color-mix(in srgb, var(--high) 55%, transparent); }
+  .scale i { position: absolute; left: 36%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: var(--ink); border: 3px solid var(--bg); }
+  .scale-labels { display: grid; grid-template-columns: 15fr 45fr 40fr; gap: 5px; font-size: .78rem; color: var(--muted); }
+  .scale-labels span:nth-child(2) { text-align: center; } .scale-labels span:nth-child(3) { text-align: right; }
+
+  /* Timeline */
+  .steps { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--hair); }
+  .steps li { display: grid; grid-template-columns: 44px 1fr; gap: 12px; padding: 20px 0; border-bottom: 1px solid var(--hair); }
+  .steps .n { font: 300 1.6rem/1 var(--display); color: var(--muted); }
+  .steps b { display: block; font-weight: 600; margin-bottom: 2px; }
+  .steps span { color: var(--muted); }
+
+  .learned { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 24px; margin-top: 12px; }
+  .learned div { border-top: 1px solid var(--ink); padding-top: 12px; }
+  .learned b { display: block; font-weight: 600; margin-bottom: 4px; }
+  .learned span { color: var(--muted); font-size: .95rem; }
+  @media (max-width: 560px) { .learned { grid-template-columns: 1fr; } }
+
+  .protos { border-top: 1px solid var(--hair); }
+  .protos a { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--hair); text-decoration: none; }
+  .protos a:hover .t { text-decoration: underline; }
+  .protos .t { font-weight: 600; }
+  .protos .d { display: block; color: var(--muted); font-size: .92rem; font-weight: 400; }
+  .protos .arrow { color: var(--muted); }
+  .tag { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ok); margin-left: 8px; }
+  .tools { color: var(--muted); }
+  footer { margin-top: 80px; padding-top: 18px; border-top: 1px solid var(--hair); font-size: .82rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Hack day · October 2026</p>
+  <h1>Alex's First Card</h1>
+  <p class="lead">An interactive story that helps people new to credit build a credit strategy, instead of leaving them to work it out alone.</p>
+  <a class="cta" href="alex-minimal.html">Try the latest prototype <span aria-hidden="true">→</span></a>
+  <span class="cta-note">Best on a phone. Takes about five minutes.</span>
+
+  <section aria-labelledby="idea">
+    <h2 id="idea">The idea</h2>
+    <p>Someone gets their first credit card. Instead of reading terms they'll forget, they make six months of choices for Alex, a fictional first-time cardholder, and see what each one does to their balance, costs and credit file.</p>
+    <p>The thread running through it is <strong>credit utilisation</strong>: how much of your limit you use. Too little builds nothing. Too much counts against you. In between shows lenders you can manage credit.</p>
+    <div class="scale" role="img" aria-label="Utilisation scale: too low under 15 percent, healthy 15 to 60 percent, too high over 60 percent"><span class="a"></span><span class="b"></span><span class="c"></span><i></i></div>
+    <div class="scale-labels" aria-hidden="true"><span>Too low</span><span>Healthy</span><span>Too high</span></div>
+  </section>
+
+  <section aria-labelledby="how">
+    <h2 id="how">How it came together</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div><b>A choose-your-own-adventure</b><span>Six monthly decisions, a live dashboard and a "why this happened" tip after every choice.</span></div></li>
+      <li><span class="n">2</span><div><b>Utilisation became the thread</b><span>Not using the card and maxing it out are both shown as mistakes, with a healthy range in the middle.</span></div></li>
+      <li><span class="n">3</span><div><b>From understanding to a plan</b><span>A companion flow, Build My Plan, turns the lesson into a commitment: choose a bill to move onto the card and how to pay it off.</span></div></li>
+      <li><span class="n">4</span><div><b>Tested with a real person</b><span>One session, four clear changes (below), all built the same afternoon.</span></div></li>
+      <li><span class="n">5</span><div><b>Three visual directions</b><span>Current, minimal and illustrative treatments explored in Figma. Minimal won: quiet while you decide, bold when you see the outcome.</span></div></li>
+      <li><span class="n">6</span><div><b>The minimal prototype</b><span>The latest version, rebuilt in the chosen direction.</span></div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="learned">
+    <h2 id="learned">What testing taught us</h2>
+    <div class="learned">
+      <div><b>Explain before you show</b><span>Utilisation now starts with a question, so the indicator means something when it appears.</span></div>
+      <div><b>Let people compare</b><span>You can step back and try a different choice to see what would have happened.</span></div>
+      <div><b>Mirror real decisions</b><span>Statements offer the real options: pay in full, the minimum, or your own amount.</span></div>
+      <div><b>End with something practical</b><span>The story finishes by setting up reminders, then leads into building your own plan.</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="protos">
+    <h2 id="protos">The prototypes</h2>
+    <div class="protos">
+      <a href="alex-minimal.html"><span><span class="t">Alex's First Card</span><span class="tag">Latest</span><span class="d">The story in the minimal direction</span></span><span class="arrow" aria-hidden="true">→</span></a>
+      <a href="build-my-plan.html"><span><span class="t">Build My Plan</span><span class="d">The companion flow for setting up your own plan</span></span><span class="arrow" aria-hidden="true">→</span></a>
+      <a href="credit-card-adventure.html"><span><span class="t">Alex's First Card, as tested</span><span class="d">The earlier version with the full dashboard</span></span><span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+  <section aria-labelledby="tools">
+    <h2 id="tools">How we worked</h2>
+    <p class="tools">Ideas, briefs and prototypes were built with Claude and Claude Code, explored visually in Figma and FigJam, and published here from GitHub. Each change from testing went from feedback to a working prototype in minutes.</p>
+  </section>
+
+  <footer>Prototypes for exploration only. All numbers and ranges are illustrative and this isn't financial advice.</footer>
+</main>
+</body>
+</html>

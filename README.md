@@ -1,4 +1,6 @@
 # helloworld
+
+**Start here:** [hack-day.html](hack-day.html) – a short outline of the Alex's First Card hack-day work, with links to every prototype.
 first drop on new gmail linked account
 
 ## Alex's First Card
