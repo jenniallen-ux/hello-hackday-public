@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alex's First Card · Minimal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=Inter:wght@400;500;600&display=swap">
+<style>
+  /* Minimal treatment of Alex's First Card.
+     Decision screens: one big sentence, hairline choices, status kept quiet at the bottom.
+     Outcome screens: the month's utilisation is the hero, with real presence. */
+  :root {
+    --bg: #ffffff; --ink: #111111; --muted: #6e6e73; --hair: #e8e8ed; --faint: #d1d1d6;
+    --low: #8e8e93; --ok: #1f8a5b; --high: #c2384d;
+    --display: "Fraunces", Georgia, serif; --body: "Inter", system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f0f10; --ink: #f2f2f4; --muted: #9a9aa1; --hair: #2a2a2e; --faint: #3a3a3f;
+      --low: #8e8e93; --ok: #4cc38a; --high: #f07087; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); -webkit-font-smoothing: antialiased; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .screen { max-width: 480px; margin: 0 auto; min-height: 100dvh; padding: 32px 28px 28px; display: flex; flex-direction: column; }
+  .fade { animation: fade .35s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .fade { animation: none; } .marker { transition: none; } }
+
+  .top { display: flex; justify-content: space-between; align-items: center; font-size: .82rem; color: var(--muted); }
+  .dots { display: flex; align-items: center; gap: 6px; }
+  .dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); }
+  .dots i.on { background: var(--ink); }
+  .dots span { margin-left: 4px; }
+  .back { border: 0; background: none; color: var(--muted); font-size: .85rem; padding: 0; margin-top: 28px; align-self: flex-start; }
+  .gap-lg { height: 56px; } .gap-md { height: 28px; } .gap-sm { height: 14px; }
+  .spacer { flex: 1; min-height: 32px; }
+
+  h1 { font: 400 2.05rem/1.15 var(--display); margin: 0; letter-spacing: -.01em; outline: none; }
+  .sub { color: var(--muted); font-size: 1.05rem; line-height: 1.45; margin: 14px 0 0; }
+  .eyebrow { font-size: .85rem; color: var(--muted); margin: 0; }
+
+  .rows { margin-top: 36px; border-bottom: 1px solid var(--hair); }
+  .row { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 18px 0; border: 0; border-top: 1px solid var(--hair); background: none; }
+  .row .t { flex: 1; font-size: 1.1rem; }
+  .row small { display: block; color: var(--muted); font-size: .85rem; margin-top: 2px; }
+  .row .arrow { color: var(--muted); font-size: 1.1rem; transition: transform .15s; }
+  .row:hover .arrow { transform: translateX(3px); color: var(--ink); }
+  .row.picked .t { font-weight: 500; }
+  .row .tried { display: block; font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+  /* Thin utilisation scale, quiet or emphasised */
+  .scale { position: relative; display: grid; grid-template-columns: 15fr 45fr 40fr; gap: 4px; height: 4px; }
+  .scale span { border-radius: 2px; background: var(--faint); }
+  .scale.strong { height: 6px; }
+  .scale.strong .s-low { background: color-mix(in srgb, var(--low) 45%, transparent); }
+  .scale.strong .s-ok { background: color-mix(in srgb, var(--ok) 70%, transparent); }
+  .scale.strong .s-high { background: color-mix(in srgb, var(--high) 55%, transparent); }
+  .marker { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--ink); border: 3px solid var(--bg); transition: left .5s ease; }
+  .scale.strong .marker { width: 18px; height: 18px; margin: -9px 0 0 -9px; }
+  .scale-labels { display: grid; grid-template-columns: 15fr 45fr 40fr; gap: 4px; font-size: .72rem; color: var(--muted); margin-top: 8px; }
+  .scale-labels span:nth-child(2) { text-align: center; } .scale-labels span:nth-child(3) { text-align: right; }
+
+  .quiet { font-size: .82rem; color: var(--muted); }
+  .quiet-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .quiet-row b { color: var(--ink); font-weight: 500; }
+  .details-btn { border: 0; background: none; padding: 0; margin-top: 18px; color: var(--muted); font-size: .82rem; }
+  .details { margin-top: 8px; color: var(--muted); font-size: .82rem; }
+
+  /* Outcome: the hero number */
+  .hero { font: 300 7.5rem/0.95 var(--display); letter-spacing: -.03em; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+  .state { font-size: 1.4rem; font-weight: 600; margin: 14px 0 0; }
+  .state.low { color: var(--low); } .state.ok { color: var(--ok); } .state.high { color: var(--high); }
+  .state-note { color: var(--muted); margin: 2px 0 0; }
+  .lesson { font-size: 1.15rem; line-height: 1.45; margin: 0; }
+  .notes { list-style: none; padding: 0; margin: 18px 0 0; font-size: .85rem; color: var(--muted); display: grid; gap: 4px; }
+
+  .pill { width: 100%; padding: 16px; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); font-weight: 600; }
+  .link { display: block; margin: 14px auto 0; border: 0; background: none; text-decoration: underline; text-underline-offset: 3px; font-size: .95rem; }
+  .meta { font-size: .82rem; color: var(--muted); margin-bottom: 16px; }
+
+  /* Own-amount payment */
+  .own { padding: 22px 0 6px; }
+  .own output { display: block; font: 300 3.2rem/1 var(--display); margin: 6px 0 14px; font-variant-numeric: tabular-nums; }
+  .own input[type=range] { width: 100%; accent-color: var(--ink); }
+  .own .ends { display: flex; justify-content: space-between; font-size: .78rem; color: var(--muted); margin: 4px 0 18px; }
+
+  /* Intro states and ending stats */
+  .states { margin-top: 28px; border-bottom: 1px solid var(--hair); }
+  .states div { padding: 14px 0; border-top: 1px solid var(--hair); }
+  .states b { display: block; font-weight: 600; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 16px; margin-top: 32px; }
+  .stats div span { display: block; font-size: .8rem; color: var(--muted); }
+  .stats div strong { font: 300 2.6rem/1.1 var(--display); font-variant-numeric: tabular-nums; }
+  .strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 28px; }
+  .strip i { height: 32px; border-radius: 4px; }
+  .strip-labels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; font-size: .72rem; color: var(--muted); margin-top: 6px; text-align: center; }
+  .months { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; }
+  .months button { border: 0; background: none; padding: 0; text-decoration: underline; text-underline-offset: 3px; color: var(--muted); font-size: .9rem; }
+
+  .toggle { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; padding: 16px 0; border-top: 1px solid var(--hair); }
+  .toggle small { display: block; color: var(--muted); font-size: .85rem; margin-top: 2px; }
+  .switch { flex: none; width: 46px; height: 28px; border-radius: 99px; border: 0; background: var(--faint); position: relative; transition: background-color .2s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); transition: transform .2s; }
+  .switch[aria-checked="true"] { background: var(--ink); }
+  .switch[aria-checked="true"]::after { transform: translateX(18px); }
+  .foot { font-size: .72rem; color: var(--muted); text-align: center; margin-top: 18px; }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+
+<script>
+/* ---------- Illustrative rules ---------- */
+const MONTHLY_RATE = 0.02;   // roughly 24% APR, charged monthly on unpaid balance
+const LOW_MAX = 0.15;        // under 15%: too little use to do much for the credit file
+const HEALTHY_MAX = 0.60;    // 15–60%: healthy use. Over 60%: too high. Illustrative, to agree with credit risk.
+const CASH_FEE_RATE = 0.03, CASH_FEE_MIN = 3;
+const minPayment = b => Math.min(b, Math.max(25, Math.round(b * 0.03)));
+
+const START = () => ({ balance: 0, limit: 500, cost: 0, health: 50, month: 0, dd: null, regular: 0, peak: 0, history: [], lastUtil: 0, flags: {} });
+let s = START();
+let snaps = {};      // month -> state before that month's choice (for rewinding)
+let tried = {};      // month -> { label: outcome } (kept across rewinds)
+let introDone = false;
+let reminders = { statement: true, alert: true, dd: false, milestones: true };
+
+const gbp = n => "£" + Math.round(n).toLocaleString("en-GB");
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ---------- Utilisation: three states ---------- */
+function uState(u) {
+  if (u < LOW_MAX) return { key: "low", word: "too low", long: "Too low to do much for your file" };
+  if (u <= HEALTHY_MAX) return { key: "ok", word: "healthy", long: "Healthy: shows you can manage credit" };
+  return { key: "high", word: "too high", long: "Too high: counts against your credit file" };
+}
+/* ---------- Payment choices: the real three (full, minimum, your own amount) ---------- */
+function paymentChoices(s, bonus) {
+  const min = minPayment(s.balance);
+  return [
+    { label: "Pay in full", hint: `${gbp(s.balance)}`,
+      apply: s => { const paid = s.balance; s.balance = 0; s.health += 3 + bonus; return { changes: [`Paid ${gbp(paid)} in full`, "No interest charged"], tip: "Paying in full means no interest. Your next statement then shows only new spending, so light, regular use is what keeps utilisation healthy." }; } },
+    { label: "Pay the minimum", hint: `${gbp(min)}`,
+      apply: s => { s.balance -= min; s.health += 3; return { changes: [`Paid ${gbp(min)}`, `Interest will be charged on ${gbp(s.balance)}`], tip: "Paying the minimum keeps you in good standing, but interest builds on what's left, and the balance keeps utilisation up." }; } },
+    { label: "Pay another amount", hint: `Anything from ${gbp(min)} to ${gbp(s.balance)}`, own: { min, max: s.balance },
+      apply: (s, amt) => { s.balance -= amt; s.health += 3 + (s.balance === 0 ? bonus : 1); return { changes: [`Paid ${gbp(amt)}`, s.balance ? `Interest will be charged on ${gbp(s.balance)}` : "No interest charged"], tip: s.balance ? `Paying more than the minimum cuts the interest. Leaving ${gbp(s.balance)} means about ${gbp(s.balance * MONTHLY_RATE)} interest this month, and it still counts towards utilisation.` : "That cleared it. Same result as paying in full." }; } },
+  ];
+}
+
+/* ---------- Story ---------- */
+const scenes = [
+  {
+    title: "The card arrives",
+    text: () => `<p>Alex is 19 and has just been approved for their first credit card, with a <strong>£500 limit</strong>. The same week, tickets go on sale for a summer festival their friends are going to: <strong>£180</strong>.</p>`,
+    choices: [
+      { label: "Buy the tickets on the card", hint: "Plan to pay it off when the bill comes",
+        apply: s => { s.balance += 180; return { changes: ["Balance up £180"], tip: "£180 is just over a third of Alex's limit, which sits in the healthy range. A planned purchase like this shows lenders the card being used, as long as it's paid off." }; } },
+      { label: "Buy the tickets and the merch bundle", hint: "£320 all in. It's a once-a-year thing",
+        apply: s => { s.balance += 320; return { changes: ["Balance up £320"], tip: "That's 64% of the limit in one go. Lenders see high utilisation as a sign of stretched finances, even if it's paid off." }; } },
+      { label: "Save up and buy them with debit next month", hint: "Leave the card alone for now",
+        apply: s => { s.flags.saver = true; return { changes: ["No balance yet"], tip: "Sensible with money, but a card that isn't used shows lenders nothing. No use means no new history on the credit file." }; } },
+    ]
+  },
+  {
+    title: "The first statement",
+    text: s => s.balance > 0
+      ? `<p>Alex's first statement lands. They owe <strong>${gbp(s.balance)}</strong>. Like every statement, it offers three ways to pay: <strong>in full</strong>, the <strong>minimum of ${gbp(minPayment(s.balance))}</strong>, or <strong>another amount</strong>.</p><p>Payday was a week ago. Paying it all would leave things tight.</p>`
+      : `<p>Alex's first statement lands: nothing to pay. While they're in the app, it suggests setting up a Direct Debit so future bills never get missed.</p>`,
+    choices: s => s.balance > 0 ? paymentChoices(s, 3) : [
+      { label: "Move regular bills onto it", hint: "Phone, travel and subscriptions, about £100 a month, paid in full by Direct Debit",
+        apply: s => { s.regular = 100; s.dd = "full"; return { changes: ["Regular bills move to the card", "Direct Debit: full balance"], tip: "Regular spending Alex already does, cleared in full every month, is a classic way to build a positive credit profile without paying any interest." }; } },
+      { label: "Set up a Direct Debit for the full balance", hint: "Set and forget",
+        apply: s => { s.dd = "full"; return { changes: ["Direct Debit: full balance"], tip: "A full-balance Direct Debit means you never pay interest or miss a payment. But with nothing on the card, there's still nothing to show lenders." }; } },
+      { label: "Not now", hint: "There's nothing to pay anyway",
+        apply: s => ({ changes: ["No change"], tip: "Fair enough, but an unused card won't build Alex's credit profile. Lenders need to see credit used and repaid." }) },
+    ]
+  },
+  {
+    title: "Cash only",
+    text: () => `<p>It's a friend's birthday and the bar they've booked is <strong>cash only</strong>. Alex needs about <strong>£60</strong>. Their debit card is in their other jacket, but the credit card works at the cashpoint.</p>`,
+    choices: [
+      { label: "Withdraw £60 on the credit card", hint: "Quick and easy",
+        apply: s => { const fee = Math.max(CASH_FEE_MIN, Math.round(60 * CASH_FEE_RATE)); s.balance += 60 + fee; s.cost += fee; s.health -= 3; return { changes: ["Balance up £60", `Cash fee: ${gbp(fee)}`, "Interest starts straight away on cash"], tip: "Cash withdrawals on credit cards usually come with a fee, and interest often starts from day one, even if you pay in full later." }; } },
+      { label: "Ask a friend to cover it and pay them back", hint: "Bank transfer tomorrow",
+        apply: s => ({ changes: ["No change to the card"], tip: "Nice workaround. Keeping a credit card for purchases (not cash) avoids some of the most expensive fees." }) },
+      { label: "Pop home for the debit card", hint: "20 minutes late, no fees",
+        apply: s => ({ changes: ["No change to the card"], tip: "A bit of hassle, zero cost. Debit for cash, credit for planned purchases is a solid rule of thumb." }) },
+    ]
+  },
+  {
+    title: "Black Friday",
+    text: s => `<p>The sales are on. Alex has had their eye on some trainers and a winter jacket, <strong>£340</strong> together. There's <strong>${gbp(s.limit - s.balance)}</strong> of room left on the card.</p>`,
+    choices: s => {
+      const list = [];
+      if (s.limit - s.balance >= 340) list.push({ label: "Get both", hint: "It's a good deal…",
+        apply: s => { s.balance += 340; return { changes: ["Balance up £340"], tip: "A deal is only a deal if you'd buy it anyway and can pay it off. And a big spend pushes utilisation into the too-high zone." }; } });
+      else list.push({ label: "Try to get both", hint: "See if it goes through",
+        apply: s => ({ changes: ["Payment declined: over the limit", "Awkward moment at the till"], tip: "Cards are usually declined if you try to go over the limit. Some charge a fee if you do go over, so it's worth knowing yours." }) });
+      list.push({ label: "Just the trainers", hint: "£90, the thing they actually need",
+        apply: s => { s.balance += 90; return { changes: ["Balance up £90"], tip: "Picking the one thing you'll really use keeps the balance easy to clear and utilisation healthy." }; } });
+      list.push({ label: "Wishlist it and wait", hint: "Check again in a week",
+        apply: s => ({ changes: ["No change"], tip: "A cooling-off rule (wait a week, then decide) is one of the simplest ways to avoid regret buys." }) });
+      return list;
+    }
+  },
+  {
+    title: "An offer arrives",
+    text: () => `<p>Good news from the bank: Alex has been offered a <strong>limit increase to £1,500</strong>.</p>`,
+    choices: [
+      { label: "Accept, and celebrate with a new phone", hint: "£600, finally an upgrade",
+        apply: s => { s.limit = 1500; s.balance += 600; return { changes: ["Limit now £1,500", "Balance up £600"], tip: "A higher limit isn't extra money. It's extra borrowing, and spending more cancels out any utilisation benefit." }; } },
+      { label: "Accept, but keep spending the same", hint: "More breathing room",
+        apply: s => { s.limit = 1500; return { changes: ["Limit now £1,500", "Same spending, lower utilisation"], tip: "Same spending on a bigger limit means a lower utilisation. Keep an eye on where it lands: below the healthy range, it does less for your file, as long as spending doesn't creep up." }; } },
+      { label: "Decline", hint: "£500 is plenty for now",
+        apply: s => ({ changes: ["Limit stays at £500"], tip: "Knowing your limits (literally) is fine. You can always say yes to a future offer." }) },
+    ]
+  },
+  {
+    title: "The six-month statement",
+    text: s => s.balance > 0
+      ? `<p>It's been six months. Alex's latest statement shows <strong>${gbp(s.balance)}</strong> owed. Pay in full, the <strong>minimum of ${gbp(minPayment(s.balance))}</strong>, or another amount?</p>`
+      : `<p>It's been six months, and Alex's balance is <strong>£0</strong>. Nothing to pay this month.</p>`,
+    choices: s => s.balance > 0 ? paymentChoices(s, 2) : [
+      { label: "See how Alex did", hint: "",
+        apply: s => ({ changes: [], tip: "A zero balance at six months is a great place to be." }) },
+    ]
+  },
+];
+
+/* ---------- Between-month effects ---------- */
+function scoreUtil(s, notes) {
+  if (s.regular) { s.balance += s.regular; notes.push(`Regular bills on the card: ${gbp(s.regular)}`); }
+  const used = s.balance / s.limit, st = uState(used);   // utilisation = this month's statement balance
+  s.history.push(used); s.lastUtil = used;
+  if (st.key === "low") notes.push(`Utilisation ${Math.round(s.balance / s.limit * 100)}%: too low to do much for the credit file`);
+  else if (st.key === "ok") { s.health += 4; notes.push(`Utilisation ${Math.round(used * 100)}%: healthy, builds the credit file`); }
+  else { s.health -= used > 0.75 ? 6 : 4; notes.push(`Utilisation ${Math.round(used * 100)}%: too high, counts against the file`); }
+}
+
+function endOfMonth(s, final) {
+  const notes = [];
+  scoreUtil(s, notes);
+  if (s.dd === "full" && s.balance > 0) { notes.push(`Direct Debit paid ${gbp(s.balance)} on time`); s.balance = 0; s.health += 2; }
+  if (!final && s.balance > 0 && s.month >= 2) { // no interest before the first statement
+    const interest = Math.round(s.balance * MONTHLY_RATE);
+    if (interest > 0) { s.balance += interest; s.cost += interest; notes.push(`Interest added: ${gbp(interest)}`); }
+  }
+  s.peak = s.balance;
+  s.health = clamp(s.health, 0, 100);
+  return notes;
+}
+
+
+
+/* ---------- Minimal rendering ---------- */
+const app = document.getElementById("app");
+const HEADLINES = [
+  s => ["Festival tickets go on sale. They cost £180.", "Alex's new card has a £500 limit. What should they do?"],
+  s => s.balance > 0 ? [`The first statement is here: ${gbp(s.balance)}.`, `Pay in full, the minimum of ${gbp(minPayment(s.balance))}, or another amount. Paying it all would leave things tight.`]
+                     : ["The first statement is here. Nothing to pay.", "The app suggests setting something up before anything is spent."],
+  s => ["The bar is cash only. Alex needs £60.", "Their debit card is at home. The credit card works at the cashpoint."],
+  s => ["Black Friday. Trainers and a jacket, £340.", `There's ${gbp(s.limit - s.balance)} of room left on the card.`],
+  s => ["The bank offers a higher limit: £1,500.", "Same card, three times the room."],
+  s => s.balance > 0 ? [`Six months in. Alex owes ${gbp(s.balance)}.`, `Pay in full, the minimum of ${gbp(minPayment(s.balance))}, or another amount.`]
+                     : ["Six months in, and nothing owed.", "Let's see what Alex built."],
+];
+const COL = { low: "var(--low)", ok: "var(--ok)", high: "var(--high)" };
+const pos = u => Math.min(100, Math.max(0, u * 100));
+
+function scale(u, strong) {
+  const st = uState(u), pct = Math.round(u * 100);
+  return `<div class="scale ${strong ? "strong" : ""}" role="meter" aria-label="Credit utilisation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-valuetext="${pct} percent, ${st.word}">
+      <span class="s-low"></span><span class="s-ok"></span><span class="s-high"></span><i class="marker" style="left:${pos(u)}%"></i></div>
+    <div class="scale-labels" aria-hidden="true"><span>Too low</span><span>Healthy</span><span>Too high</span></div>`;
+}
+function topBar(label) {
+  const m = s.month;
+  return `<div class="top"><div class="dots" aria-hidden="true">${[1,2,3,4,5,6].map(i => `<i class="${i <= m ? "on" : ""}"></i>`).join("")}<span>${label}</span></div><span>${gbp(s.balance)} owed</span></div>`;
+}
+function quietStatus() {
+  const u = s.balance / s.limit;
+  return `<div class="quiet">
+    <div class="quiet-row"><span>Utilisation</span><b>${Math.round(u * 100)}%</b></div>
+    ${scale(u, false)}
+    <button class="details-btn" id="detailsBtn" aria-expanded="false">Balance, costs and credit health ›</button>
+    <div class="details" id="details" hidden>Balance ${gbp(s.balance)} of ${gbp(s.limit)} · Costs ${gbp(s.cost)} · Credit health ${s.health}/100</div>
+  </div>`;
+}
+function wireDetails() {
+  const b = document.getElementById("detailsBtn"); if (!b) return;
+  b.addEventListener("click", () => { const d = document.getElementById("details"); d.hidden = !d.hidden; b.setAttribute("aria-expanded", String(!d.hidden)); });
+}
+function show(html) { app.innerHTML = `<section class="screen fade">${html}<p class="foot">Illustrative numbers and ranges. Not financial advice.</p></section>`; const h = app.querySelector("h1"); if (h) h.focus(); window.scrollTo({ top: 0 }); }
+function on(id, fn) { const el = document.getElementById(id); if (el) el.addEventListener("click", fn); }
+
+/* Intro: a question before the indicator appears */
+function renderIntro() {
+  s.month = 0;
+  const opts = [["Not using the card at all", "No spending, nothing to pay"], ["Spending about £150 a month and paying it off", "Around 30% of the limit"], ["Spending most of the £500 and paying it off", "Around 90% of the limit"]];
+  show(`<div class="top"><span>Before we start</span><span></span></div><div class="gap-lg"></div>
+    <h1 tabindex="-1">Alex has a £500 limit. What does most to build their credit file?</h1>
+    <div class="rows">${opts.map(([l, h], i) => `<button class="row" data-i="${i}"><span class="t">${l}<small>${h}</small></span><span class="arrow" aria-hidden="true">→</span></button>`).join("")}</div>`);
+  app.querySelectorAll(".row").forEach(b => b.addEventListener("click", () => revealUtil(+b.dataset.i)));
+}
+function revealUtil(pick) {
+  const fb = ["It feels safest, but lenders can't judge credit you don't use.", "Yes. Regular use that you pay off shows lenders you can manage credit.", "Paying it off is good, but using most of your limit looks stretched, even if you pay on time."][pick];
+  show(`<div class="top"><span>Before we start</span><span></span></div><div class="gap-md"></div>
+    <p class="eyebrow">${pick === 1 ? "Spot on" : "Not quite"}</p>
+    <h1 tabindex="-1">It's called credit utilisation.</h1>
+    <p class="sub">${fb} Utilisation is how much of your limit you use. Lenders see it in three states.</p>
+    <div class="gap-md"></div>${scale(0.36, true)}
+    <div class="states">
+      <div><b style="color:var(--low)">Too low · under 15%</b><span class="quiet">Too little use to do much for your file.</span></div>
+      <div><b style="color:var(--ok)">Healthy · 15% to 60%</b><span class="quiet">Regular use, paid off, shows you can manage credit.</span></div>
+      <div><b style="color:var(--high)">Too high · over 60%</b><span class="quiet">Counts against your file, even if you pay on time.</span></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="pill" id="go">Start Alex's story</button>`);
+  on("go", () => { introDone = true; s.month = 1; renderScene(); });
+}
+
+/* Decision: quiet status */
+function renderScene() {
+  snaps[s.month] = clone(s);
+  const sc = scenes[s.month - 1];
+  const choices = typeof sc.choices === "function" ? sc.choices(s) : sc.choices;
+  const [head, sub] = HEADLINES[s.month - 1](s);
+  const seen = tried[s.month] || {};
+  show(`${topBar(`Month ${s.month}`)}
+    ${s.month > 1 ? `<button class="back" id="back">← Month ${s.month - 1}</button><div class="gap-sm"></div>` : `<div class="gap-lg"></div>`}
+    <h1 tabindex="-1">${head}</h1>
+    <p class="sub">${sub}</p>
+    <div class="rows">${choices.map((c, i) => { const t = seen[c.label]; return `<button class="row" data-i="${i}"><span class="t">${c.label}${c.hint ? `<small>${c.hint}</small>` : ""}${t ? `<span class="tried">Tried before: credit health ${t.health}, owed ${gbp(t.balance)}</span>` : ""}</span><span class="arrow" aria-hidden="true">→</span></button>`; }).join("")}</div>
+    <div id="own"></div>
+    <div class="spacer"></div>
+    ${quietStatus()}`);
+  app.querySelectorAll(".row").forEach(b => b.addEventListener("click", () => { const c = choices[+b.dataset.i]; c.own ? ownAmount(c, b) : choose(c); }));
+  on("back", () => rewindTo(s.month - 1)); wireDetails();
+}
+function ownAmount(c, btn) {
+  app.querySelectorAll(".row").forEach(r => r.classList.remove("picked")); btn.classList.add("picked");
+  const { min, max } = c.own, mid = Math.round((min + max) / 2);
+  document.getElementById("own").innerHTML = `<div class="own fade"><label for="amt" class="quiet">Alex pays</label><output id="out">${gbp(mid)}</output>
+    <input id="amt" type="range" min="${min}" max="${max}" step="1" value="${mid}"><div class="ends"><span>Minimum ${gbp(min)}</span><span>Full ${gbp(max)}</span></div>
+    <button class="pill" id="payOwn">Pay ${gbp(mid)}</button></div>`;
+  const r = document.getElementById("amt");
+  r.addEventListener("input", () => { document.getElementById("out").textContent = gbp(+r.value); document.getElementById("payOwn").textContent = `Pay ${gbp(+r.value)}`; });
+  on("payOwn", () => choose(c, +r.value)); r.focus();
+}
+function rewindTo(m) { s = clone(snaps[m]); renderScene(); }
+
+/* Outcome: utilisation with real presence */
+function choose(choice, amt) {
+  const before = s.health;
+  const { changes, tip } = choice.apply(s, amt);
+  const monthly = endOfMonth(s, s.month >= 6);
+  (tried[s.month] = tried[s.month] || {})[choice.label] = { health: s.health, balance: s.balance };
+  const u = s.lastUtil, st = uState(u), d = s.health - before, m = s.month, last = m >= 6;
+  const notes = [...changes, ...monthly].filter(n => !/^Utilisation \d+%/.test(n));
+  show(`${topBar(`Month ${m}`)}<div class="gap-md"></div>
+    <p class="eyebrow">${choice.label}${amt ? `: ${gbp(amt)}` : ""}. This month, Alex used</p>
+    <div class="hero">${Math.round(u * 100)}%</div>
+    <p class="eyebrow">of their ${gbp(s.limit)} limit.</p>
+    <p class="state ${st.key}">${st.word[0].toUpperCase() + st.word.slice(1)}</p>
+    <p class="state-note">${{ low: "Too little use to do much for the credit file.", ok: "Shows lenders Alex can manage credit.", high: "Counts against the credit file, even if paid on time." }[st.key]}</p>
+    <div class="gap-sm"></div>${scale(u, true)}
+    <div class="gap-md"></div>
+    <p class="lesson">${tip}</p>
+    ${notes.length ? `<ul class="notes">${notes.map(n => `<li>${n}</li>`).join("")}</ul>` : ""}
+    <div class="spacer"></div>
+    <p class="meta">Credit health ${s.health}${d ? ` (${d > 0 ? "+" : ""}${d})` : ""} · Costs ${gbp(s.cost)} · Owed ${gbp(s.balance)}</p>
+    <button class="pill" id="next">${last ? "See how Alex did" : "Next month"}</button>
+    <button class="link" id="retry">Try a different choice</button>`);
+  on("next", () => { s.month++; last ? renderEnding() : renderScene(); });
+  on("retry", () => rewindTo(m));
+}
+
+function renderEnding() {
+  const healthy = s.history.filter(u => uState(u).key === "ok").length;
+  const neverUsed = s.history.every(u => uState(u).key === "low");
+  let title, text;
+  if (s.health >= 70 && s.balance === 0) { title = "Quietly brilliant."; text = "Alex used the card, paid it off, and paid little or nothing in interest. A bit boring, which is what good credit looks like."; }
+  else if (neverUsed) { title = "Playing it safe."; text = "No debt, but utilisation stayed too low, so the credit file has little new to show."; }
+  else if (s.health >= 55) { title = "On the right track."; text = s.balance ? "A decent history is building. Clearing the balance each month would stop interest nibbling away." : `Nothing owed, though ${gbp(s.cost)} went on interest and fees along the way.`; }
+  else if (s.health >= 40) { title = "Lessons learned."; text = `${gbp(s.cost)} went on interest and fees, and utilisation wasn't always healthy. Regular use, paid off, is what lenders notice.`; }
+  else { title = "A bumpy start."; text = "High balances and interest knocked Alex's credit health. It recovers with healthy use and a shrinking balance."; }
+  show(`<div class="top"><span>Six months later</span><span>${gbp(s.balance)} owed</span></div><div class="gap-md"></div>
+    <h1 tabindex="-1">${title}</h1><p class="sub">${text}</p>
+    <div class="stats">
+      <div><span>Healthy months</span><strong>${healthy}/6</strong></div>
+      <div><span>Credit health</span><strong>${s.health}</strong></div>
+      <div><span>Interest &amp; fees</span><strong>${gbp(s.cost)}</strong></div>
+      <div><span>Still owed</span><strong>${gbp(s.balance)}</strong></div>
+    </div>
+    <div class="strip" role="img" aria-label="Utilisation by month: ${s.history.map(u => uState(u).word).join(", ")}">${s.history.map(u => `<i style="background:${COL[uState(u).key]};opacity:${uState(u).key === "ok" ? 0.85 : 0.55}"></i>`).join("")}</div>
+    <div class="strip-labels" aria-hidden="true">${s.history.map((_, i) => `<span>M${i + 1}</span>`).join("")}</div>
+    <div class="gap-md"></div>
+    <p class="quiet">What if? Go back to any month.</p>
+    <div class="months">${[1,2,3,4,5,6].map(m => `<button data-m="${m}">Month ${m}</button>`).join("")}</div>
+    <div class="spacer"></div>
+    <button class="pill" id="windup">Set up your own reminders</button>
+    <button class="link" id="again">Start again</button>`);
+  app.querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => rewindTo(+b.dataset.m)));
+  on("windup", renderWindup); on("again", restart);
+}
+
+const REMINDERS = [
+  { id: "statement", name: "Remind me before each statement", note: "Three days before, with the amount due." },
+  { id: "alert", name: "Tell me if my utilisation gets too high", note: "When your balance passes about 60% of your limit." },
+  { id: "dd", name: "Pay the full balance by Direct Debit", note: "Never late, never any interest." },
+  { id: "milestones", name: "Show my credit-building milestones", note: "First full payment, three healthy months, and more." },
+];
+function renderWindup() {
+  show(`<div class="top"><span>Your turn</span><span></span></div><div class="gap-md"></div>
+    <h1 tabindex="-1">Alex's best months left nothing to memory.</h1><p class="sub">Which of these would help you?</p>
+    <div class="gap-md"></div>
+    <div style="border-bottom:1px solid var(--hair)">${REMINDERS.map(r => `<div class="toggle"><div><span id="r-${r.id}">${r.name}</span><small>${r.note}</small></div><button class="switch" role="switch" aria-checked="${reminders[r.id]}" aria-labelledby="r-${r.id}" data-r="${r.id}"></button></div>`).join("")}</div>
+    <div class="spacer"></div>
+    <button class="pill" id="save">Save my reminders</button>
+    <button class="link" id="backEnd">Back to Alex's results</button>`);
+  app.querySelectorAll("[data-r]").forEach(b => b.addEventListener("click", () => { reminders[b.dataset.r] = !reminders[b.dataset.r]; b.setAttribute("aria-checked", reminders[b.dataset.r]); }));
+  on("save", renderSaved); on("backEnd", renderEnding);
+}
+function renderSaved() {
+  const onList = REMINDERS.filter(r => reminders[r.id]);
+  show(`<div class="top"><span>All set</span><span></span></div><div class="gap-lg"></div>
+    <h1 tabindex="-1">${onList.length ? `${onList.length} reminder${onList.length > 1 ? "s" : ""} on.` : "No reminders for now."}</h1>
+    <p class="sub">${onList.length ? onList.map(r => r.name).join(". ") + "." : "You can switch them on any time."} In the app, these would be set on your card${reminders.dd ? ", and Direct Debit setup would open next" : ""}.</p>
+    <div class="spacer"></div>
+    <button class="pill" id="plan">Build my own plan</button>
+    <button class="link" id="again">Play Alex's story again</button>`);
+  on("plan", () => { location.href = "build-my-plan.html"; }); on("again", restart);
+}
+function restart() { s = START(); snaps = {}; tried = {}; s.month = 1; renderScene(); }
+
+renderIntro();
+</script>
+</body>
+</html>
