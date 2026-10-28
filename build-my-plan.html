@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build My Plan</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+  /* "Build my plan": a short guided flow that turns credit-building understanding into a plan
+     the customer commits to. Steps: intro → regular spend → repayment → stay on track → review → done.
+     Same visual language as Alex's First Card. All numbers illustrative. */
+  :root {
+    --bg: #f4f1ea; --card: #fffdf8; --fg: #23212b; --muted: #6b6775; --line: #e2ddd2;
+    --accent: #3d5afe; --accent-ink: #ffffff; --accent-soft: #eef1ff; --accent-line: #c8d1ff;
+    --good: #1f8a5b; --good-soft: #e6f4ec; --warn: #c77700; --warn-soft: #fdf1df; --bad: #c2384d; --bad-soft: #fbe7ea;
+    --shadow: 0 1px 2px rgba(35,33,43,.06), 0 6px 24px rgba(35,33,43,.06);
+    --display: "Fraunces", Georgia, serif; --body: "Inter", system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17161c; --card: #211f28; --fg: #f1eef7; --muted: #a9a4b5; --line: #34313d;
+      --accent: #8c9eff; --accent-ink: #14131a; --accent-soft: #252a44; --accent-line: #3c4570;
+      --good: #4cc38a; --good-soft: #1d3329; --warn: #f0a742; --warn-soft: #3a2c17; --bad: #f07087; --bad-soft: #3b1f26;
+      --shadow: none; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 16px 16px 120px; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 12px; }
+  .brand { font: 600 1rem var(--display); }
+  .stepinfo { font-size: .8rem; color: var(--muted); }
+  .progress { display: flex; gap: 4px; margin-bottom: 18px; }
+  .progress i { flex: 1; height: 4px; border-radius: 99px; background: var(--line); }
+  .progress i.done { background: var(--accent); }
+
+  h1 { font: 600 1.7rem/1.15 var(--display); margin: 0 0 8px; outline: none; }
+  .lead { color: var(--muted); margin: 0 0 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: var(--shadow); margin-bottom: 14px; }
+  .card h2 { font-size: 1rem; margin: 0 0 6px; }
+  .card p { margin: 0 0 8px; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  .steps-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .steps-list li { display: flex; gap: 12px; align-items: flex-start; }
+  .num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 600; display: grid; place-items: center; font-size: .85rem; }
+
+  /* Option cards */
+  .options { display: grid; gap: 10px; }
+  .opt { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px;
+         border: 1.5px solid var(--line); background: var(--card); transition: border-color .15s, background-color .15s; }
+  .opt:hover { border-color: var(--accent); }
+  .opt[aria-checked="true"], .opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .tick { flex: none; width: 22px; height: 22px; margin-top: 2px; border: 2px solid var(--line); display: grid; place-items: center; color: var(--accent-ink); font-size: 13px; }
+  .opt[role="checkbox"] .tick, .opt[aria-pressed] .tick { border-radius: 6px; }
+  .opt[role="radio"] .tick { border-radius: 50%; }
+  .opt[aria-checked="true"] .tick, .opt[aria-pressed="true"] .tick { background: var(--accent); border-color: var(--accent); }
+  .opt-body { flex: 1; min-width: 0; }
+  .opt-title { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+  .opt-title span:last-child { font-variant-numeric: tabular-nums; }
+  .opt small { display: block; color: var(--muted); font-size: .85rem; margin-top: 2px; }
+  .badge { display: inline-block; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 99px; background: var(--good-soft); color: var(--good); margin-left: 6px; vertical-align: 1px; }
+  .custom-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .custom-row input { width: 100px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); }
+
+  /* Utilisation meter */
+  .meter { position: sticky; top: 0; z-index: 2; margin: 0 -16px 16px; padding: 12px 16px;
+           background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .meter-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .85rem; margin-bottom: 6px; }
+  .meter-row strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
+  .ubar { position: relative; height: 12px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .ubar .fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 99px; background: var(--good); transition: width .4s ease, background-color .4s ease; }
+  .ubar .zone { position: absolute; top: 0; bottom: 0; left: 1%; width: 29%; background: color-mix(in srgb, var(--good) 22%, transparent); border-right: 2px solid var(--good); }
+  .meter-note { font-size: .82rem; margin-top: 6px; }
+  .meter-note.good { color: var(--good); } .meter-note.warn { color: var(--warn); } .meter-note.bad { color: var(--bad); } .meter-note.none { color: var(--muted); }
+
+  /* Projection chart */
+  .proj { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; align-items: end; height: 90px; margin: 12px 0 4px; position: relative; }
+  .proj .band { position: absolute; left: 0; right: 0; bottom: 0; border-top: 2px dashed var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); pointer-events: none; }
+  .proj .b { position: relative; border-radius: 6px 6px 0 0; background: var(--good); min-height: 3px; transition: height .4s ease; }
+  .proj-labels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; font-size: .72rem; color: var(--muted); text-align: center; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .facts div { border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .facts span { display: block; font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .facts strong { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+
+  /* Toggles */
+  .toggle { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .toggle:last-child { border-bottom: 0; }
+  .switch { flex: none; width: 48px; height: 28px; border-radius: 99px; border: 0; background: var(--line); position: relative; transition: background-color .2s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .switch[aria-checked="true"] { background: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(20px); }
+
+  .tip { background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 14px; padding: 12px 14px; font-size: .92rem; margin: 12px 0; }
+  .tip b { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin-bottom: 2px; }
+  .alert { border-radius: 14px; padding: 12px 14px; font-size: .92rem; margin: 12px 0; }
+  .alert.warn { background: var(--warn-soft); color: var(--fg); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); }
+  .alert.bad { background: var(--bad-soft); color: var(--fg); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); }
+
+  /* Plan summary */
+  .plan-line { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .plan-line:last-child { border-bottom: 0; }
+  .plan-line .k { flex: none; width: 104px; font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding-top: 2px; }
+  .plan-line .v { flex: 1; }
+  .plan-line button { border: 0; background: none; color: var(--accent); font-size: .85rem; font-weight: 600; padding: 0; margin-top: 4px; }
+  .timeline { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid var(--line); display: grid; gap: 12px; }
+  .timeline li { position: relative; }
+  .timeline li::before { content: ""; position: absolute; left: -25px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--card); border: 2px solid var(--accent); }
+  .timeline b { display: block; font-size: .8rem; color: var(--accent); }
+
+  .footer { position: fixed; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-top: 1px solid var(--line); }
+  .footer .inner { max-width: 560px; margin: 0 auto; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); display: flex; gap: 10px; }
+  .btn { flex: 1; padding: 14px 16px; border-radius: 14px; font-weight: 600; border: 1.5px solid var(--line); background: var(--card); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); flex: 2; }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .disclaimer { font-size: .78rem; color: var(--muted); text-align: center; margin-top: 18px; }
+  .done-mark { width: 64px; height: 64px; border-radius: 50%; background: var(--good-soft); color: var(--good); display: grid; place-items: center; font-size: 30px; margin: 12px 0 14px; }
+  .fade { animation: fade .3s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .fade { animation: none; } .ubar .fill, .proj .b, .switch, .switch::after { transition: none; } }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span class="brand">Your credit plan</span><span class="stepinfo" id="stepinfo"></span></div>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <div id="meterSlot"></div>
+  <main id="screen" aria-live="polite"></main>
+  <p class="disclaimer">Prototype. Amounts and the healthy range are illustrative. This is a plan you choose, not financial advice.</p>
+</div>
+<div class="footer"><div class="inner" id="footer"></div></div>
+
+<script>
+/* ---------- Illustrative rules ---------- */
+const HEALTHY_MAX = 0.30;      // illustrative healthy utilisation ceiling, to agree with credit risk
+const MONTHLY_RATE = 0.02;     // roughly 24% APR, illustrative
+const minPayment = b => Math.min(b, Math.max(25, Math.round(b * 0.03)));
+const gbp = n => "£" + Math.round(n).toLocaleString("en-GB");
+
+/* Spending the customer ALREADY does, moved onto the card. Not new spending. */
+const BILLS = [
+  { id: "phone", name: "Phone bill", amount: 20, note: "A fixed monthly bill" },
+  { id: "streaming", name: "Streaming or music subscription", amount: 11, note: "Small and predictable" },
+  { id: "travel", name: "Travel or fuel", amount: 60, note: "Varies month to month" },
+  { id: "food", name: "Weekly food shop", amount: 200, note: "About £50 a week" },
+];
+
+const state = {
+  step: 0, limit: 500,
+  bills: new Set(), customOn: false, customAmount: 30,
+  pay: null,                    // "full" | "minimum" | "manual"
+  alerts: { statement: true, spend: true, milestones: true },
+};
+
+const spend = () => [...state.bills].reduce((t, id) => t + BILLS.find(b => b.id === id).amount, 0) + (state.customOn ? (+state.customAmount || 0) : 0);
+const util = () => spend() / state.limit;
+const ceiling = () => Math.round(state.limit * HEALTHY_MAX);
+
+function utilStatus(u) {
+  if (u === 0) return ["none", "Nothing on the card yet. An unused card builds no history."];
+  if (u <= HEALTHY_MAX) return ["good", "In the healthy range. Lenders can see you using credit lightly."];
+  if (u <= 0.75) return ["warn", "Above the healthy range. Try moving less onto the card."];
+  return ["bad", "Close to your limit. This would count against your credit file."];
+}
+
+/* 6-month projection of statement balance for a repayment approach */
+function project(pay) {
+  const s = spend(); let bal = 0, interest = 0; const months = [];
+  for (let m = 0; m < 6; m++) {
+    bal = Math.min(bal + s, state.limit);     // spending is declined once the limit is reached
+    months.push(bal);                         // statement balance
+    if (pay === "full") bal = 0;
+    else {
+      const paid = pay === "minimum" ? minPayment(bal) : (m % 3 === 2 ? 0 : bal); // "manual": forgets one in three
+      if (pay === "manual" && paid === 0) interest += 12;   // illustrative late fee
+      bal -= paid;
+      const i = Math.round(bal * MONTHLY_RATE); bal = Math.min(bal + i, state.limit); interest += i;
+    }
+  }
+  return { months, interest, endBalance: bal, maxed: months.some(v => v >= state.limit) };
+}
+
+/* ---------- Screens ---------- */
+const STEPS = ["intro", "spend", "pay", "track", "review", "done"];
+const screen = document.getElementById("screen"), footer = document.getElementById("footer");
+
+function chrome() {
+  const n = state.step;
+  document.getElementById("stepinfo").textContent = n >= 1 && n <= 4 ? `Step ${n} of 4` : "";
+  document.getElementById("progress").innerHTML = [1,2,3,4].map(i => `<i class="${i <= n ? "done" : ""}"></i>`).join("");
+  document.getElementById("progress").style.visibility = n >= 1 && n <= 4 ? "visible" : "hidden";
+}
+
+function meterHTML() {
+  const u = util(), pct = Math.round(u * 100), [cls, note] = utilStatus(u);
+  const col = { none: "var(--muted)", good: "var(--good)", warn: "var(--warn)", bad: "var(--bad)" }[cls];
+  return `<div class="meter">
+    <div class="meter-row"><span>Each month on your card</span><strong>${gbp(spend())} · ${pct}% of ${gbp(state.limit)}</strong></div>
+    <div class="ubar" role="meter" aria-label="Credit utilisation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-valuetext="${pct} percent, healthy range up to 30 percent">
+      <span class="fill" style="width:${Math.min(100, u > 0 ? Math.max(2, pct) : 0)}%;background:${col}"></span><span class="zone"></span></div>
+    <div class="meter-note ${cls}">${note} <span class="muted">Healthy range: up to ${gbp(ceiling())}.</span></div>
+  </div>`;
+}
+
+function setFooter(buttons) {
+  footer.innerHTML = buttons.map((b, i) => `<button class="btn ${b.primary ? "primary" : ""}" data-i="${i}" ${b.disabled ? "disabled" : ""}>${b.label}</button>`).join("");
+  footer.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => buttons[+btn.dataset.i].go()));
+}
+
+function go(step) { state.step = step; render(); window.scrollTo({ top: 0 }); const h = screen.querySelector("h1"); if (h) h.focus(); }
+
+function render() {
+  chrome();
+  const view = STEPS[state.step];
+  document.getElementById("meterSlot").innerHTML = (view === "spend" || view === "pay") ? meterHTML() : "";
+  ({ intro, spend: spendScreen, pay: payScreen, track, review, done })[view]();
+}
+
+function intro() {
+  screen.innerHTML = `<section class="fade">
+    <h1 tabindex="-1">Build your credit plan</h1>
+    <p class="lead">Your card can help you build a positive credit history. It works best with a simple plan you set once and leave running.</p>
+    <div class="card">
+      <ol class="steps-list">
+        <li><span class="num">1</span><div><strong>Choose what goes on the card</strong><br><span class="muted">A bill you already pay, kept well under your limit.</span></div></li>
+        <li><span class="num">2</span><div><strong>Choose how you'll pay it off</strong><br><span class="muted">See what each approach does over six months.</span></div></li>
+        <li><span class="num">3</span><div><strong>Stay on track</strong><br><span class="muted">Reminders and alerts so nothing slips.</span></div></li>
+        <li><span class="num">4</span><div><strong>Check and confirm</strong><br><span class="muted">About 2 minutes in total. You can change it any time.</span></div></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>Your credit limit</h2>
+      <p class="muted">In the app this comes from your account. For the prototype, pick one:</p>
+      <div class="options" role="radiogroup" aria-label="Credit limit">
+        ${[250, 500, 1000].map(l => `<button class="opt" role="radio" aria-checked="${state.limit === l}" data-limit="${l}"><span class="tick">${state.limit === l ? "✓" : ""}</span><span class="opt-body"><span class="opt-title"><span>${gbp(l)} limit</span><span class="muted">healthy up to ${gbp(l * HEALTHY_MAX)}</span></span></span></button>`).join("")}
+      </div>
+    </div>`;
+  screen.querySelectorAll("[data-limit]").forEach(b => b.addEventListener("click", () => { state.limit = +b.dataset.limit; render(); }));
+  setFooter([{ label: "Start", primary: true, go: () => go(1) }]);
+}
+
+function spendScreen() {
+  screen.innerHTML = `<section class="fade">
+    <h1 tabindex="-1">What will you put on the card?</h1>
+    <p class="lead">Pick spending you <strong>already</strong> do, not something new. Moving it onto the card is what shows lenders you can use credit well.</p>
+    <div class="options">
+      ${BILLS.map(b => `<button class="opt" aria-pressed="${state.bills.has(b.id)}" data-bill="${b.id}"><span class="tick">${state.bills.has(b.id) ? "✓" : ""}</span><span class="opt-body"><span class="opt-title"><span>${b.name}</span><span>${gbp(b.amount)}/mo</span></span><small>${b.note}</small></span></button>`).join("")}
+      <div class="opt" style="cursor:default" ${state.customOn ? 'aria-pressed="true"' : ""}>
+        <button class="tick" style="cursor:pointer;${state.customOn ? "background:var(--accent);border-color:var(--accent)" : ""}" id="customToggle" aria-pressed="${state.customOn}" aria-label="Something else">${state.customOn ? "✓" : ""}</button>
+        <span class="opt-body"><span class="opt-title"><span>Something else</span></span>
+          <span class="custom-row"><label for="customAmt" class="muted">£ a month</label><input id="customAmt" type="number" inputmode="numeric" min="0" step="5" value="${state.customAmount}" ${state.customOn ? "" : "disabled"}></span></span>
+      </div>
+    </div>
+    <div id="advice"></div>
+  </section>`;
+  screen.querySelectorAll("[data-bill]").forEach(b => b.addEventListener("click", () => { const id = b.dataset.bill; state.bills.has(id) ? state.bills.delete(id) : state.bills.add(id); render(); }));
+  document.getElementById("customToggle").addEventListener("click", () => { state.customOn = !state.customOn; render(); });
+  const amt = document.getElementById("customAmt");
+  amt.addEventListener("input", () => { state.customAmount = Math.max(0, +amt.value || 0); refreshSpend(); });
+  refreshSpend();
+}
+
+function refreshSpend() {
+  document.getElementById("meterSlot").innerHTML = meterHTML();
+  document.getElementById("advice").innerHTML = spendAdvice();
+  setFooter([{ label: "Back", go: () => go(0) }, { label: "Continue", primary: true, disabled: spend() === 0, go: () => go(2) }]);
+}
+
+function spendAdvice() {
+  const u = util();
+  if (u === 0) return `<div class="tip"><b>Why at least one?</b>Lenders can only see how you handle credit if you use it. A small, regular amount is enough.</div>`;
+  if (u <= HEALTHY_MAX) return `<div class="tip"><b>Good choice</b>Small, predictable spending that you pay off in full is the simplest way to build a positive history.</div>`;
+  return `<div class="alert ${u > 0.75 ? "bad" : "warn"}">At ${gbp(spend())} a month you'd use ${Math.round(u * 100)}% of your limit. Using a high share of your limit can count against you, even if you pay on time. Try keeping it under ${gbp(ceiling())}.</div>`;
+}
+
+const PAY = [
+  { id: "full", name: "Pay the full balance by Direct Debit", note: "Paid automatically each month. No interest.", badge: "Most effective" },
+  { id: "minimum", name: "Pay the minimum by Direct Debit", note: "Never late, but interest builds on what's left." },
+  { id: "manual", name: "I'll pay it myself each month", note: "Flexible, but easy to forget." },
+];
+
+function payScreen() {
+  const p = state.pay ? project(state.pay) : null;
+  const maxBar = Math.max(state.limit * 0.6, ...(p ? p.months : [0]));
+  screen.innerHTML = `<section class="fade">
+    <h1 tabindex="-1">How will you pay it off?</h1>
+    <p class="lead">Pick one to see what happens over your first six months.</p>
+    <div class="options" role="radiogroup" aria-label="Repayment approach">
+      ${PAY.map(o => `<button class="opt" role="radio" aria-checked="${state.pay === o.id}" data-pay="${o.id}"><span class="tick">${state.pay === o.id ? "✓" : ""}</span><span class="opt-body"><span class="opt-title"><span>${o.name}${o.badge ? `<span class="badge">${o.badge}</span>` : ""}</span></span><small>${o.note}</small></span></button>`).join("")}
+    </div>
+    ${p ? `<div class="card" style="margin-top:14px">
+      <h2>Your statement balance, month by month</h2>
+      <div class="proj" role="img" aria-label="Statement balance over six months: ${p.months.map(gbp).join(", ")}">
+        <span class="band" style="height:${Math.min(100, ceiling() / maxBar * 100)}%"></span>
+        ${p.months.map(v => `<span class="b" style="height:${Math.max(3, v / maxBar * 100)}%;background:${v / state.limit <= HEALTHY_MAX ? "var(--good)" : v / state.limit <= .75 ? "var(--warn)" : "var(--bad)"}"></span>`).join("")}
+      </div>
+      <div class="proj-labels">${["M1","M2","M3","M4","M5","M6"].map(m => `<span>${m}</span>`).join("")}</div>
+      <p class="muted" style="margin-top:6px">Dashed line: top of the healthy range (${gbp(ceiling())}).</p>
+      <div class="facts">
+        <div><span>Interest &amp; fees</span><strong>${gbp(p.interest)}</strong></div>
+        <div><span>Owed after 6 months</span><strong>${gbp(p.endBalance)}</strong></div>
+      </div>
+      ${payTip(state.pay, p)}
+    </div>` : ""}
+  </section>`;
+  screen.querySelectorAll("[data-pay]").forEach(b => b.addEventListener("click", () => { state.pay = b.dataset.pay; render(); }));
+  setFooter([{ label: "Back", go: () => go(1) }, { label: "Continue", primary: true, disabled: !state.pay, go: () => go(3) }]);
+}
+
+function payTip(pay, p) {
+  if (pay === "full") return `<div class="tip"><b>Why this works</b>Your balance resets every month, so utilisation stays low, you never pay interest, and every payment is on time.</div>`;
+  if (pay === "minimum") return `<div class="alert ${p.maxed ? "bad" : "warn"}">Payments are always on time, but the balance keeps growing. After six months you'd owe ${gbp(p.endBalance)} and have paid ${gbp(p.interest)} in interest${p.maxed ? ". You'd reach your limit, so the card would start to decline, and a maxed-out card counts against your file." : ", with utilisation climbing."}</div>`;
+  return `<div class="alert warn">This example assumes one payment in three slips, which is common without a reminder. A missed payment adds a fee and can stay on your credit file for years.</div>`;
+}
+
+const TRACK = [
+  { id: "statement", name: "Remind me before my statement", note: "Three days before, with the amount due." },
+  { id: "spend", name: "Tell me if I go over the healthy range", note: () => `An alert when your balance passes ${gbp(ceiling())}.` },
+  { id: "milestones", name: "Show my credit-building milestones", note: "First full payment, three healthy months, and more." },
+];
+
+function track() {
+  screen.innerHTML = `<section class="fade">
+    <h1 tabindex="-1">Stay on track</h1>
+    <p class="lead">A plan only works if it keeps running. These help without you having to remember.</p>
+    <div class="card">
+      ${TRACK.map(t => `<div class="toggle"><div><strong id="lbl-${t.id}">${t.name}</strong><br><span class="muted">${typeof t.note === "function" ? t.note() : t.note}</span></div>
+        <button class="switch" role="switch" aria-checked="${state.alerts[t.id]}" aria-labelledby="lbl-${t.id}" data-alert="${t.id}"></button></div>`).join("")}
+    </div>
+    ${state.pay !== "full" ? `<div class="tip"><b>Worth knowing</b>You can switch to paying the full balance by Direct Debit at any time, from your plan.</div>` : ""}
+  </section>`;
+  screen.querySelectorAll("[data-alert]").forEach(b => b.addEventListener("click", () => { const k = b.dataset.alert; state.alerts[k] = !state.alerts[k]; render(); }));
+  setFooter([{ label: "Back", go: () => go(2) }, { label: "Review my plan", primary: true, go: () => go(4) }]);
+}
+
+function review() {
+  const items = [...state.bills].map(id => BILLS.find(b => b.id === id).name.split(" or ")[0]);
+  if (state.customOn && state.customAmount > 0) items.push(`something else (${gbp(state.customAmount)})`);
+  const u = util(), [cls] = utilStatus(u), payName = PAY.find(p => p.id === state.pay).name;
+  const SUMMARY = { statement: "Reminder before each statement", spend: `Alert above ${gbp(ceiling())}`, milestones: "Credit-building milestones" };
+  const alertsOn = TRACK.filter(t => state.alerts[t.id]).map(t => SUMMARY[t.id]);
+  const p = project(state.pay);
+  screen.innerHTML = `<section class="fade">
+    <h1 tabindex="-1">Your plan</h1>
+    <p class="lead">Here's what you've chosen. You can change any part of it later.</p>
+    <div class="card">
+      <div class="plan-line"><span class="k">On the card</span><span class="v"><strong>${gbp(spend())} a month</strong><br>${items.join(", ")}<br><span class="muted">${Math.round(u * 100)}% of your ${gbp(state.limit)} limit${cls === "good" ? ", in the healthy range" : ", above the healthy range"}</span><br><button data-edit="1">Change</button></span></div>
+      <div class="plan-line"><span class="k">Paying</span><span class="v"><strong>${payName}</strong><br><span class="muted">${p.interest ? `About ${gbp(p.interest)} in interest and fees over six months` : "No interest or fees"}</span><br><button data-edit="2">Change</button></span></div>
+      <div class="plan-line"><span class="k">Staying on track</span><span class="v">${alertsOn.length ? alertsOn.join("<br>") : '<span class="muted">No reminders or alerts</span>'}<br><button data-edit="3">Change</button></span></div>
+    </div>
+    ${cls !== "good" ? `<div class="alert warn">Your plan puts you above the healthy range. You can still save it, but moving less onto the card would build your history faster.</div>` : ""}
+    <div class="card">
+      <h2>What happens next</h2>
+      <ol class="timeline">
+        <li><b>This week</b>Move ${items[0] ? items[0].toLowerCase() : "your chosen spending"} onto the card${state.pay !== "manual" ? " and set up your Direct Debit" : ""}.</li>
+        <li><b>First statement</b>${state.pay === "full" ? "Paid in full automatically. No interest." : state.pay === "minimum" ? "Minimum paid automatically. Interest starts on the rest." : "Pay it yourself by the due date."}</li>
+        <li><b>Three months in</b>${state.alerts.milestones ? "Milestone: three months of healthy use." : "Three months of history on your file."}</li>
+        <li><b>Six months in</b>A check-in to review your plan and see what you've built.</li>
+      </ol>
+    </div>
+  </section>`;
+  screen.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => go(+b.dataset.edit)));
+  setFooter([{ label: "Back", go: () => go(3) }, { label: state.pay === "manual" ? "Save my plan" : "Set up Direct Debit and save", primary: true, go: () => go(5) }]);
+}
+
+function done() {
+  screen.innerHTML = `<section class="fade">
+    <div class="done-mark" aria-hidden="true">✓</div>
+    <h1 tabindex="-1">Your plan is saved</h1>
+    <p class="lead">${state.pay === "manual" ? "It's in your checklist, along with a reminder before each statement." : "In the app, this is where the Direct Debit setup screen would open, already filled in."} You'll find your plan and milestones on your card's home screen.</p>
+    <div class="card">
+      <h2>Your first milestone</h2>
+      <p>Make your first purchase from your plan. We'll mark it off when it lands.</p>
+      <div class="ubar" aria-hidden="true"><span class="fill" style="width:8%"></span></div>
+    </div>
+    <div class="tip"><b>Want to see it in action?</b>Try Alex's First Card to see how different choices play out over six months.</div>
+  </section>`;
+  setFooter([{ label: "Start again", go: () => { Object.assign(state, { bills: new Set(), customOn: false, customAmount: 30, pay: null, alerts: { statement: true, spend: true, milestones: true } }); go(0); } },
+             { label: "Try Alex's First Card", primary: true, go: () => { location.href = "credit-card-adventure.html"; } }]);
+}
+
+render();
+</script>
+</body>
+</html>
