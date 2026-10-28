@@ -62,6 +62,10 @@
   .meter-row strong { color: var(--fg); font-weight: 600; }
   .bar { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
   .bar span { display: block; height: 100%; width: 50%; border-radius: inherit; background: var(--warn); transition: width .5s ease, background-color .5s ease; }
+  .ubar { position: relative; height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .ubar .zone { position: absolute; top: 0; bottom: 0; left: 1%; width: 29%; background: color-mix(in srgb, var(--good) 22%, transparent); border-right: 2px solid var(--good); }
+  .ubar .fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 99px; background: var(--good); transition: width .5s ease, background-color .5s ease; }
+  .meter-row small { font-size: .7rem; }
   .delta { font-weight: 600; margin-left: 4px; }
   .delta.up { color: var(--good); } .delta.down { color: var(--bad); }
 
@@ -99,7 +103,7 @@
   footer { margin-top: 20px; font-size: .78rem; color: var(--muted); text-align: center; }
   .fade { animation: fade .35s ease both; }
   @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .fade { animation: none; } .bar span { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .fade { animation: none; } .bar span, .ubar .fill { transition: none; } }
 </style>
 </head>
 <body>
@@ -113,11 +117,15 @@
     <div class="stats">
       <div class="stat"><span class="label">Balance</span><span class="value" id="balance">£0</span><span class="sub" id="limit">of £500 limit</span></div>
       <div class="stat"><span class="label">Costs</span><span class="value" id="cost">£0</span><span class="sub">interest &amp; fees</span></div>
-      <div class="stat"><span class="label">Month</span><span class="value" id="monthStat">1 of 6</span><span class="sub" id="util">0% used</span></div>
+      <div class="stat"><span class="label">Month</span><span class="value" id="monthStat">1 of 6</span><span class="sub">of the story</span></div>
     </div>
     <div class="meter">
       <div class="meter-row"><span>Credit health</span><span><strong id="healthLabel">Getting started</strong><span id="healthDelta" class="delta"></span></span></div>
       <div class="bar" role="meter" aria-label="Credit health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" id="healthBar"><span id="healthFill"></span></div>
+    </div>
+    <div class="meter">
+      <div class="meter-row"><span>Credit utilisation <small>· healthy range 1–30%</small></span><span><strong id="utilLabel">0% · nothing owed</strong></span></div>
+      <div class="ubar" role="meter" aria-label="Credit utilisation, healthy range 1 to 30 percent" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="utilBar"><span class="fill" id="utilFill"></span><span class="zone"></span></div>
     </div>
   </section>
 
@@ -130,10 +138,11 @@
 /* ---------- Illustrative rules ---------- */
 const MONTHLY_RATE = 0.02;   // roughly 24% APR, charged monthly on unpaid balance
 const LATE_FEE = 12;
+const HEALTHY_MAX = 0.30;   // illustrative healthy utilisation ceiling
 const CASH_FEE_RATE = 0.03, CASH_FEE_MIN = 3;
 const minPayment = b => Math.min(b, Math.max(25, Math.round(b * 0.03)));
 
-const START = () => ({ balance: 0, limit: 500, cost: 0, health: 50, month: 1, cash: false, dd: null, flags: {} });
+const START = () => ({ balance: 0, limit: 500, cost: 0, health: 50, month: 1, cash: false, dd: null, regular: 0, peak: 0, history: [], flags: {} });
 let s = START();
 
 const gbp = n => "£" + Math.round(n).toLocaleString("en-GB");
@@ -149,9 +158,9 @@ const scenes = [
       { label: "Buy the tickets on the card", hint: "Plan to pay it off when the bill comes",
         apply: s => { s.balance += 180; return { changes: ["Balance up £180"], tip: "Using a card for a planned purchase you can afford is fine. What matters is what happens when the bill arrives." }; } },
       { label: "Buy the tickets and the merch bundle", hint: "£320 all in. It's a once-a-year thing",
-        apply: s => { s.balance += 320; return { changes: ["Balance up £320", "Card is 64% used"], tip: "Lenders look at how much of your limit you use. Staying under about a third tends to look better on your credit file." }; } },
+        apply: s => { s.balance += 320; return { changes: ["Balance up £320"], tip: "Lenders look at how much of your limit you use. Staying under about a third tends to look better on your credit file." }; } },
       { label: "Save up and buy them with debit next month", hint: "Leave the card alone for now",
-        apply: s => { s.health += 2; s.flags.saver = true; return { changes: ["No balance yet"], tip: "Totally valid, though a card that's never used doesn't build much history. Small, regular spending you pay off is what helps." }; } },
+        apply: s => { s.flags.saver = true; return { changes: ["No balance yet"], tip: "Sensible with money, but a card that isn't used shows lenders nothing. No use means no new history on the credit file." }; } },
     ]
   },
   {
@@ -167,10 +176,12 @@ const scenes = [
       { label: "Leave it until next month", hint: "It's only the first bill…",
         apply: s => { s.balance += LATE_FEE; s.cost += LATE_FEE; s.health -= 15; s.flags.missed = true; return { changes: [`Late fee: ${gbp(LATE_FEE)}`, "Missed payment recorded"], tip: "A missed payment can stay on a credit file for years. If money's tight, even the minimum keeps things on track." }; } },
     ] : [
+      { label: "Put a small regular bill on it", hint: "£20 phone bill, paid in full by Direct Debit",
+        apply: s => { s.regular = 20; s.dd = "full"; return { changes: ["Phone bill moves to the card", "Direct Debit: full balance"], tip: "A small regular spend, cleared in full every month, is a classic way to build a positive credit profile without paying any interest." }; } },
       { label: "Set up a Direct Debit for the full balance", hint: "Set and forget",
-        apply: s => { s.dd = "full"; s.health += 3; return { changes: ["Direct Debit: full balance"], tip: "A full-balance Direct Debit is one of the simplest ways to never pay interest or miss a payment." }; } },
+        apply: s => { s.dd = "full"; return { changes: ["Direct Debit: full balance"], tip: "A full-balance Direct Debit is one of the simplest ways to never pay interest or miss a payment." }; } },
       { label: "Not now", hint: "There's nothing to pay anyway",
-        apply: s => ({ changes: ["No change"], tip: "Fair enough. Just remember that once you do spend, the bill will need paying by the due date." }) },
+        apply: s => ({ changes: ["No change"], tip: "Fair enough, but an unused card won't build Alex's credit profile. Lenders need to see credit used and repaid." }) },
     ]
   },
   {
@@ -180,7 +191,7 @@ const scenes = [
       { label: "Withdraw £60 on the credit card", hint: "Quick and easy",
         apply: s => { const fee = Math.max(CASH_FEE_MIN, Math.round(60 * CASH_FEE_RATE)); s.balance += 60 + fee; s.cost += fee; s.cash = true; s.health -= 3; return { changes: ["Balance up £60", `Cash fee: ${gbp(fee)}`, "Interest starts straight away on cash"], tip: "Cash withdrawals on credit cards usually come with a fee, and interest often starts from day one, even if you pay in full later." }; } },
       { label: "Ask a friend to cover it and pay them back", hint: "Bank transfer tomorrow",
-        apply: s => { s.health += 1; return { changes: ["No change to the card"], tip: "Nice workaround. Keeping a credit card for purchases (not cash) avoids some of the most expensive fees." }; } },
+        apply: s => { return { changes: ["No change to the card"], tip: "Nice workaround. Keeping a credit card for purchases (not cash) avoids some of the most expensive fees." }; } },
       { label: "Pop home for the debit card", hint: "20 minutes late, no fees",
         apply: s => ({ changes: ["No change to the card"], tip: "A bit of hassle, zero cost. Debit for cash, credit for planned purchases is a solid rule of thumb." }) },
     ]
@@ -194,11 +205,11 @@ const scenes = [
       if (room >= 340) list.push({ label: "Get both", hint: "It's a good deal…",
         apply: s => { s.balance += 340; return { changes: ["Balance up £340"], tip: "A deal is only a deal if you'd buy it anyway and can pay it off. Otherwise interest can eat the discount." }; } });
       else list.push({ label: "Try to get both", hint: "See if it goes through",
-        apply: s => { s.health -= 4; s.flags.declined = true; return { changes: ["Payment declined: over the limit", "Awkward moment at the till"], tip: "Cards are usually declined if you try to go over the limit. Some charge a fee if you do go over, so it's worth knowing yours." }; } });
+        apply: s => { s.flags.declined = true; return { changes: ["Payment declined: over the limit", "Awkward moment at the till"], tip: "Cards are usually declined if you try to go over the limit. Some charge a fee if you do go over, so it's worth knowing yours." }; } });
       list.push({ label: "Just the trainers", hint: "£90, the thing they actually need",
         apply: s => { s.balance += 90; return { changes: ["Balance up £90"], tip: "Picking the one thing you'll really use keeps the balance easy to clear." }; } });
       list.push({ label: "Wishlist it and wait", hint: "Check again in a week",
-        apply: s => { s.health += 1; return { changes: ["No change"], tip: "A cooling-off rule (wait a week, then decide) is one of the simplest ways to avoid regret buys." }; } });
+        apply: s => { return { changes: ["No change"], tip: "A cooling-off rule (wait a week, then decide) is one of the simplest ways to avoid regret buys." }; } });
       return list;
     }
   },
@@ -207,9 +218,9 @@ const scenes = [
     text: () => `<p>Good news from the bank: Alex has been offered a <strong>limit increase to £1,500</strong>.</p>`,
     choices: [
       { label: "Accept, and celebrate with a new phone", hint: "£600, finally an upgrade",
-        apply: s => { s.limit = 1500; s.balance += 600; s.health -= 2; return { changes: ["Limit now £1,500", "Balance up £600"], tip: "A higher limit isn't extra money. It's extra borrowing, and the interest on a bigger balance adds up fast." }; } },
+        apply: s => { s.limit = 1500; s.balance += 600; return { changes: ["Limit now £1,500", "Balance up £600"], tip: "A higher limit isn't extra money. It's extra borrowing, and spending more cancels out any utilisation benefit." }; } },
       { label: "Accept, but keep spending the same", hint: "More breathing room",
-        apply: s => { s.limit = 1500; s.health += 3; return { changes: ["Limit now £1,500", "Less of the limit is used"], tip: "Same spending on a bigger limit means using less of it, which can help a credit score, as long as spending doesn't creep up." }; } },
+        apply: s => { s.limit = 1500; return { changes: ["Limit now £1,500", "Utilisation drops, same spending"], tip: "Same spending on a bigger limit means a lower utilisation, which can help your credit file, as long as spending doesn't creep up." }; } },
       { label: "Decline", hint: "£500 is plenty for now",
         apply: s => ({ changes: ["Limit stays at £500"], tip: "Knowing your limits (literally) is fine. You can always say yes to a future offer." }) },
     ]
@@ -234,16 +245,28 @@ const scenes = [
 ];
 
 /* ---------- Between-month effects ---------- */
-function endOfMonth(s) {
+function scoreUtil(s, notes) {
+  if (s.regular) { s.balance += s.regular; notes.push(`Phone bill on the card: ${gbp(s.regular)}`); }
+  s.peak = Math.max(s.peak, s.balance);
+  const used = s.peak / s.limit;
+  s.history.push(used);
+  if (used === 0) notes.push("Card not used: nothing new on the credit file");
+  else if (used <= HEALTHY_MAX) { s.health += 4; notes.push(`Utilisation ${Math.round(used * 100)}%: healthy use builds the file`); }
+  else if (used <= 0.75) { notes.push(`Utilisation ${Math.round(used * 100)}%: on the high side, no boost`); }
+  else { s.health -= 5; notes.push(`Utilisation ${Math.round(used * 100)}%: near the limit, a negative signal`); }
+}
+
+function endOfMonth(s, final) {
   const notes = [];
-  if (s.dd === "full" && s.balance > 0) { notes.push(`Direct Debit cleared ${gbp(s.balance)}`); s.balance = 0; }
-  if (s.balance > 0 && s.month >= 2) { // no interest before the first statement
-    const interest = Math.round(s.balance * MONTHLY_RATE);
-    if (interest > 0) { s.balance += interest; s.cost += interest; notes.push(`Interest added: ${gbp(interest)}`); }
+  scoreUtil(s, notes);
+  if (s.dd === "full" && s.balance > 0) { notes.push(`Direct Debit paid ${gbp(s.balance)} on time`); s.balance = 0; s.health += 2; }
+  if (!final) {
+    if (s.balance > 0 && s.month >= 2) { // no interest before the first statement
+      const interest = Math.round(s.balance * MONTHLY_RATE);
+      if (interest > 0) { s.balance += interest; s.cost += interest; notes.push(`Interest added: ${gbp(interest)}`); }
+    }
   }
-  const used = s.balance / s.limit;
-  if (used > 0.75) { s.health -= 4; notes.push("Card is over 75% used"); }
-  else if (used > 0 && used < 0.3) { s.health += 2; }
+  s.peak = s.balance;
   s.health = clamp(s.health, 0, 100);
   return notes;
 }
@@ -265,7 +288,12 @@ function updateDash() {
   document.getElementById("limit").textContent = `of ${gbp(s.limit)} limit`;
   document.getElementById("cost").textContent = gbp(s.cost);
   document.getElementById("monthStat").textContent = `${Math.min(s.month, 6)} of 6`;
-  document.getElementById("util").textContent = `${Math.round(s.balance / s.limit * 100)}% used`;
+  const u = s.balance / s.limit, pct = Math.round(u * 100);
+  const [uWord, uCol] = u === 0 ? ["nothing owed", "var(--muted)"] : u <= HEALTHY_MAX ? ["healthy", "var(--good)"] : u <= 0.75 ? ["high", "var(--warn)"] : ["very high", "var(--bad)"];
+  document.getElementById("utilLabel").textContent = `${pct}% · ${uWord}`;
+  const uf = document.getElementById("utilFill");
+  uf.style.width = Math.min(100, Math.max(u > 0 ? 2 : 0, pct)) + "%"; uf.style.backgroundColor = uCol;
+  document.getElementById("utilBar").setAttribute("aria-valuenow", pct);
   const [label, colour] = healthLabel(s.health);
   document.getElementById("healthLabel").textContent = label;
   const fill = document.getElementById("healthFill");
@@ -299,7 +327,7 @@ function renderScene() {
 
 function choose(choice) {
   const { changes, tip } = choice.apply(s);
-  const monthly = s.month < 6 ? endOfMonth(s) : [];
+  const monthly = endOfMonth(s, s.month >= 6);
   const all = [...changes, ...monthly].filter(Boolean);
   updateDash();
   const last = s.month >= 6;
@@ -317,13 +345,15 @@ function choose(choice) {
 function renderEnding() {
   updateDash();
   let title, text;
-  const neverUsed = s.balance === 0 && s.cost === 0 && s.flags.saver && !s.flags.paidFull1;
+  const neverUsed = s.history.every(u => u === 0);
+  const healthyMonths = s.history.filter(u => u > 0 && u <= HEALTHY_MAX).length;
+  const avgUtil = Math.round(s.history.reduce((a, b) => a + b, 0) / s.history.length * 100);
   if (s.health >= 70 && s.balance === 0) {
     title = "Quietly brilliant";
     text = "Alex used the card, paid it off, and paid little or nothing in interest. Honestly, it was a bit boring, and that's exactly what good credit looks like.";
   } else if (neverUsed) {
     title = "Playing it safe";
-    text = "Alex stayed debt-free and paid nothing in fees. The trade-off: a card that's barely used doesn't build much history. A small regular spend, paid off in full by Direct Debit, would get the best of both.";
+    text = "Alex stayed debt-free and paid nothing in fees, but the card was never used, so the credit file has nothing new to show. Lenders can't judge how you handle credit you don't use. A small regular spend, paid off in full by Direct Debit, would build the profile at no cost.";
   } else if (s.health >= 55 && s.balance === 0) {
     title = "On the right track";
     text = `Alex ended with nothing owed, though ${gbp(s.cost)} went on interest and fees along the way. Paying in full every month, and avoiding cash withdrawals, would bring that close to zero.`;
@@ -349,8 +379,10 @@ function renderEnding() {
       <div><span>Interest &amp; fees</span><strong>${gbp(s.cost)}</strong></div>
       <div><span>Credit health</span><strong>${s.health}/100</strong></div>
       <div><span>Limit</span><strong>${gbp(s.limit)}</strong></div>
+      <div><span>Average utilisation</span><strong>${avgUtil}%</strong></div>
+      <div><span>Healthy-use months</span><strong>${healthyMonths} of 6</strong></div>
     </div>
-    <div class="tip"><b>Three habits that matter most</b>Pay on time, every time. Pay the full balance when you can. Keep well below your limit.</div>
+    <div class="tip"><b>Three habits that matter most</b>Use the card a little, regularly. Pay on time, ideally in full. Keep utilisation in the healthy range, well below your limit.</div>
     <button class="primary" id="again">Play again with different choices</button>
   </article>`;
   document.getElementById("again").addEventListener("click", () => { s = START(); lastHealth = s.health; renderScene(); });
